@@ -6,6 +6,9 @@ output: html_document
 
 > Verification Scoreboard (VerifScoreboard) for scoring ensemble forecasts
 
+Project page is here:
+https://jeffnorville.github.io/VerifScoreboard/
+
 
 ## Project Outline
 This gihub repo contains the following structure:
