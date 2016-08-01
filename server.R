@@ -13,7 +13,7 @@ library(dplyr)
 library(RPostgreSQL)
 library(lazyeval)
 library(ggplot2)
-library(DT)
+# library(DT)
 
 db <- src_postgres(
   dbname = REdbname,

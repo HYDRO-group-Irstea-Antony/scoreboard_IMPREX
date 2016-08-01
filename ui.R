@@ -13,7 +13,7 @@ library(dplyr)
 library(RPostgreSQL)
 library(lazyeval)
 library(ggplot2)
-library(DT)
+# library(DT)
 
 db <- src_postgres(
   dbname = REdbname,
@@ -22,6 +22,7 @@ db <- src_postgres(
   user = REuser,
   password = REpassword
 )
+
 tbl.scores <- tbl(db, "tblScores")
 tbl.dataload <- tbl(db, "tblDataLoad")
 tbl.interface <- tbl(db, "tblInterface")
