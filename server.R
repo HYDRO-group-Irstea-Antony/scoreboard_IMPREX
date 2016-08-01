@@ -25,24 +25,22 @@ db <- src_postgres(
 
 tbl.scores <- tbl(db, "tblScores")
 
-# Sample pdf-generating function:
-makePdf <- function(filename, plotObject){
-  pdf(file = filename)
-  g <- plotObject
-  
-  # plot(cars)
-  dev.off()
-}
-
-makePng <- function(filename, pngObject){
-  png::writePNG(pngObject)
-  # pdf(file = filename)
-  g <- pngObject
-  # plot(cars)
-  dev.off()
-}
-
-
+# # pdf-generating function:
+# makePdf <- function(filename, plotObject){
+#   pdf(file = filename)
+#   g <- plotObject
+#   
+#   # plot(cars)
+#   dev.off()
+# }
+# 
+# makePng <- function(filename, pngObject){
+#   png::writePNG(pngObject)
+#   # pdf(file = filename)
+#   g <- pngObject
+#   # plot(cars)
+#   dev.off()
+# }
 
 shinyServer(function(input, output, session) {
   
