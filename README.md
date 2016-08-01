@@ -1,5 +1,5 @@
 ---
-output: pdf_document
+output: html_document
 ---
 # IMPREX Verification Scoreboard
 ![IMPREX Project](www/imprex.png)
