@@ -24,6 +24,22 @@ db <- src_postgres(
 
 tbl.scores <- tbl(db, "tblScores")
 
+tmpModelVariable <-
+  filter(tbl(db, "tblInterface"),
+         ObjectName == "Model Variable" & LanguageID == RElanguage)
+ctlModelVariable <- collect(tmpModelVariable)
+
+tmpScoreType <-
+  select(tbl.scores, scoreType)
+ctlScoreType <- arrange_(distinct(collect(tmpScoreType, n=Inf)))
+
+tmpLocationName <-
+  distinct(select(tbl.scores, locationID, dataPackageGUID))
+ctlLocationName <- collect(tmpLocationName)
+ctlLocationName <-
+  arrange_(ctlLocationName, "dataPackageGUID", "locationID")
+
+
 # # pdf-generating function:
 # makePdf <- function(filename, plotObject){
 #   pdf(file = filename)
@@ -42,6 +58,57 @@ tbl.scores <- tbl(db, "tblScores")
 # }
 
 shinyServer(function(input, output, session) {
+  
+  # define Filters
+  output$ScoreType <- renderUI({
+    if(!is.null(ctlScoreType)) {
+      # ScoreType <- firstFitler()$scoreType
+      ScoreType <- structure(ctlModelVariable)
+      # Location=unique(initial.query()$locationID)
+    }
+    selectInput("scoreType","Score Type", choices = structure(ScoreType), multiple=T)
+  })
+  
+  output$AllScoreTypes <- renderUI({
+    if(!is.null(ctlScoreType)) {
+      ScoreType <- structure(ctlModelVariable)
+      # Location=unique(initial.query()$locationID)
+    }
+    selectInput("scoreType","Score Type", 
+                choices = structure(ScoreType), 
+                multiple=TRUE,
+                selected = c("RMSE Skill Score",
+                           "Brier Skill Score",
+                           "CRPS Skill Score")
+    )
+  })
+  # selectInput("rtnAllScoreTypes",
+  #             multiple = TRUE,
+  #             "Score(s):",
+  #             c(sort.int(ctlScoreType$scoreType)),
+  #             selected = c("RMSE Skill Score",
+  #                          "Brier Skill Score",
+  #                          "CRPS Skill Score"
+  #             )
+              
+  # selectInput("rtnLocid",
+  #             multiple = TRUE,
+  #             "Location(s):",
+  #             c(ctlLocationName$locationID
+  #             )),
+  
+  # selectInput("rtnModelVariable",
+  #             "Variable:",
+  #             c(sort.int(ctlModelVariable$ObjectItemName)),
+  #             selected = "Streamflow"
+  # ),
+  # selectInput("rtnForecastType",
+  #             "Forecast System:",
+  #             c(ctlForecastType$forecastType)
+  # ),
+  
+  
+  
   
   filtInput <- reactive({
     validate(

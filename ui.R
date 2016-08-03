@@ -32,21 +32,6 @@ tmpCaseStudy <-
          ObjectName == "Case Study" & LanguageID == RElanguage)
 ctlCaseStudy <- collect(tmpCaseStudy)
 
-tmpScoreType <-
-  select(tbl.scores, scoreType)
-ctlScoreType <- arrange_(distinct(collect(tmpScoreType, n=Inf)))
-
-tmpModelVariable <-
-  filter(tbl(db, "tblInterface"),
-         ObjectName == "Model Variable" & LanguageID == RElanguage)
-ctlModelVariable <- collect(tmpModelVariable)
-
-tmpLocationName <-
-  distinct(select(tbl.scores, locationID, dataPackageGUID))
-ctlLocationName <- collect(tmpLocationName)
-ctlLocationName <-
-  arrange_(ctlLocationName, "dataPackageGUID", "locationID")
-
 tmpForecastType <-
   select(tbl.scores, forecastType)
 ctlForecastType <- arrange_(distinct(collect(tmpForecastType, n=Inf)))
@@ -76,7 +61,6 @@ shinyUI(
         ),
         selected = 1
         ),
-
         selectInput(
           "rtnForecastSystem",
           "System:",
@@ -94,25 +78,10 @@ shinyUI(
       
       wellPanel(
         h4("Filter Criteria"),
-        
-        selectInput("rtnLocid",
-                    multiple = TRUE,
-                    "Location(s):",
-                    c(ctlLocationName$locationID
-                    )),
-        selectInput("rtnModelVariable",
-                    "Variable:",
-                    c(sort.int(ctlModelVariable$ObjectItemName)),
-                    selected = "Streamflow"
-                    ),
-        selectInput("rtnForecastType",
-                    "Forecast System:",
-                    c(ctlForecastType$forecastType)
-                    ),
-        selectInput("rtnScoreType",
-                    "Score:",
-                    c(sort.int(ctlScoreType$scoreType))
-                    )
+        uiOutput("Location"),
+        uiOutput("ModelVariable"),
+        uiOutput("ForecastType"),
+        uiOutput("ScoreType")
       )
     ),
 
@@ -144,15 +113,7 @@ shinyUI(
           h4("Select and filter data to create "),
           p("Plot scores by selected location(s)"),
           plotOutput("facetPlot"),
-          selectInput("rtnAllScoreTypes",
-                      multiple = TRUE,
-                      "Score(s):",
-                      c(sort.int(ctlScoreType$scoreType)),
-                      selected = c("RMSE Skill Score",
-                                  "Brier Skill Score",
-                                  "CRPS Skill Score"
-                      )
-          ),
+          uiOutput("AllScoreTypes"),
           #output pdf
           wellPanel(
             h4("Save Plot") ,
