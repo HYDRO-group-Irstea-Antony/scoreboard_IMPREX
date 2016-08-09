@@ -60,8 +60,11 @@ shinyUI(
       column(
       4,
       wellPanel(
+        
+        uiOutput("CaseStudy"),
+        
         selectInput(
-        "rtnCaseStudy",
+        "rtnCaseStudyOLD",
         "Case Study:",
         c(
           "Central European Rivers" = 1,
@@ -76,6 +79,7 @@ shinyUI(
         ),
         selected = 1
         ),
+<<<<<<< HEAD
 
         selectInput(
           "rtnForecastSystem",
@@ -90,10 +94,18 @@ shinyUI(
           ),
           selected = "E-HYPE"
         )
+=======
+        
+        uiOutput("System"),
+        
+        uiOutput("Setup")
+        
+>>>>>>> b1e392d... uiOutput / renderUI partout
       ),
       
       wellPanel(
         h4("Filter Criteria"),
+<<<<<<< HEAD
         
         selectInput("rtnLocid",
                     multiple = TRUE,
@@ -113,6 +125,12 @@ shinyUI(
                     "Score:",
                     c(sort.int(ctlScoreType$scoreType))
                     )
+=======
+        uiOutput("ModelVariable"),
+        uiOutput("ForecastType"),
+        uiOutput("Location")
+        # uiOutput("ScoreType")
+>>>>>>> b1e392d... uiOutput / renderUI partout
       )
     ),
 
@@ -127,6 +145,7 @@ shinyUI(
           p("Plot a score over lead times for one or more locations"),
           plotOutput("seriesPlot") ,
           
+          uiOutput("ScoreTypeSingle"),
           #output pdf
           wellPanel(
             h4("Save Plot") ,
@@ -144,6 +163,7 @@ shinyUI(
           h4("Select and filter data to create "),
           p("Plot scores by selected location(s)"),
           plotOutput("facetPlot"),
+<<<<<<< HEAD
           selectInput("rtnAllScoreTypes",
                       multiple = TRUE,
                       "Score(s):",
@@ -153,6 +173,11 @@ shinyUI(
                                   "CRPS Skill Score"
                       )
           ),
+=======
+          uiOutput("AllScoreTypes"),
+          uiOutput("ScoreType"),
+          
+>>>>>>> b1e392d... uiOutput / renderUI partout
           #output pdf
           wellPanel(
             h4("Save Plot") ,
@@ -177,10 +202,18 @@ shinyUI(
         
         # TODO define and test RDS, possibly CSV/TXT file uploads
         tabPanel(
+          "Compare Skill Scores",
+          h4("Compare only skill scores"),
+          p("")
+          
+        ),
+        
+        
+        # TODO define and test RDS, possibly CSV/TXT file uploads
+        tabPanel(
           "Upload",
           h4("Add score data to the IMPREX database"),
           p("")
-
         )
       )
     )

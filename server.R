@@ -24,7 +24,51 @@ db <- src_postgres(
 )
 
 tbl.scores <- tbl(db, "tblScores")
+tbl.interface <- tbl(db, "tblInterface")
+tbl.forecastsetup <- tbl(db, "tblForecastSetup")
+# totes <- cbind(tbl.scores$forecastSetup, tbl.forecastsetup)
 
+<<<<<<< HEAD
+=======
+# enc2utf8
+# defined within the interface table
+tmpCaseStudy <-
+    filter(tbl.interface,
+         ObjectName == "Case Study" & LanguageID == RElanguage)
+ctlCaseStudy <- collect(tmpCaseStudy)
+
+tmpSystem <-
+  filter(tbl.interface,
+         ObjectName == "System" & LanguageID == RElanguage)
+ctlSystem <- collect(tmpSystem)
+
+# t.forecast.setup <- collect(db, tbl.forecastsetup)
+
+tmpSetup <- select(tbl.forecastsetup, ID, forecastSetup)
+ctlSetup <- collect(tmpSetup)
+
+# tmpForecastSetup <-
+#   select(tbl.scores, forecastSystem)
+# ctlForecastSetup <- arrange_(distinct(collect(tmpForecastSetup, n=Inf)))
+
+# directly from the score table
+tmpScoreType <-
+  select(tbl.scores, scoreType)
+ctlScoreType <- arrange_(distinct(collect(tmpScoreType, n=Inf)))
+
+tmpModelVariable <-
+  select(tbl.scores, modelVariable)
+ctlModelVariable <- arrange_(distinct(collect(tmpModelVariable, n=Inf)))
+
+# was filtering by multiple datapackageGUIDs before, not necessary now?
+tmpLocationName <- 
+  distinct(select(tbl.scores, locationID, dataPackageGUID))
+ctlLocationName <- collect(tmpLocationName)
+ctlLocationName <-
+  arrange_(ctlLocationName, "dataPackageGUID", "locationID")
+
+
+>>>>>>> b1e392d... uiOutput / renderUI partout
 # # pdf-generating function:
 # makePdf <- function(filename, plotObject){
 #   pdf(file = filename)
@@ -44,6 +88,76 @@ tbl.scores <- tbl(db, "tblScores")
 
 shinyServer(function(input, output, session) {
   
+<<<<<<< HEAD
+=======
+  # define Filters
+  output$CaseStudy <- renderUI({
+    if(is.null(ctlCaseStudy))
+      return()
+    # CaseStudy <- ctlCaseStudy$ObjectItemName
+    CaseStudy <- setNames(ctlCaseStudy$ObjectInteger, ctlCaseStudy$ObjectItemName)
+    # CaseStudy = paste(ctlCaseStudy$ObjectItemName, "\"=\"", ctlCaseStudy$ObjectInteger )
+    selectInput("rtnCaseStudy", "Case Study (DB):", choices = CaseStudy, multiple = F)
+  })
+
+  #ex E-HYPE (was forecastSystem)
+  output$System <- renderUI({
+    if(is.null(ctlSystem))
+      return()
+    System <- ctlSystem$ObjectItemName
+    selectInput("rtnForecastSystem", "System:", choices = System, multiple = F, selected = "E-HYPE")
+  })
+  
+  # note - set choices=character(0) to reset selections 
+  
+  output$Location <- renderUI({
+    if (is.null(ctlLocationName))
+      return()
+    Location <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
+    selectInput("rtnLocid","Location: ", choices = structure(Location), multiple=T)
+  })
+  
+# setup ex Bias Corr 1 (was forecastType)
+  output$Setup <- renderUI({
+    if(!is.null(ctlSetup)) {
+      # Setup <- setNames(ctlSetup$ID, ctlSetup$forecastSetup) # ID, value
+      Setup <- c(ctlSetup$forecastSetup) #value only
+      selectInput("rtnForecastType","Forecast Setup: ", 
+                  choices = structure(Setup), 
+                  multiple=F)
+    }
+  })
+
+  output$ScoreType <- renderUI({
+    if(!is.null(ctlScoreType)) {
+      # ScoreType <- structure(ctlScoreType)
+      ScoreType <- structure(ctlScoreType$scoreType)
+    }
+    selectInput("rtnAllScoreTypes",
+                "Score Type(s)", 
+                choices = ScoreType, 
+                multiple=T,
+                selected = c("RMSE Skill Score",
+                             "Brier Skill Score",
+                             "CRPS Skill Score"))
+  })
+  
+  output$ScoreTypeSingle <- renderUI({
+    if(!is.null(ctlScoreType)) {
+      ScoreType <- structure(ctlScoreType$scoreType)
+    }
+    selectInput("rtnScoreType","Score Type", choices = ScoreType, multiple=F)
+  })
+
+  output$ModelVariable <- renderUI({
+    if (is.null(ctlModelVariable))
+      return()
+    ModelVariable <- ctlModelVariable$modelVariable
+    selectInput("rtnModelVariable","Variable: ", choices = structure(ModelVariable), multiple=F)
+  })
+  
+
+>>>>>>> b1e392d... uiOutput / renderUI partout
   filtInput <- reactive({
     validate(
       need(input$rtnLocid != "", "Please select at least one location")
@@ -59,10 +173,10 @@ shinyServer(function(input, output, session) {
     }
     remote <- filter(remote,
       caseStudy == input$rtnCaseStudy &
-      forecastSystem == input$rtnForecastSystem  &
+      forecastSystem == input$rtnForecastSystem  & # ehype
       # scoreNA == FALSE & #more like "bad data" now, contains -Infinity too
       modelVariable == input$rtnModelVariable &
-      forecastType == input$rtnForecastType &
+      forecastType == input$rtnForecastType & # Bias Corr 1
       scoreType == input$rtnScoreType
     )
     getit <- structure(collect(remote)) #database hit
