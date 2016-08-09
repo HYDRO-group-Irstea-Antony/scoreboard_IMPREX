@@ -80,15 +80,15 @@ shinyUI(
         selectInput(
           "rtnForecastSystem",
           "System:",
-          c("ECMWF EFAS" = 1,
-            "E-HYPE" = 2,
-            "System 3" = 3,
-            "ECMWF LS Seasonal month" = 4,
-            "ECMWF EDMD Seasonal month" = 5,
-            "ECMWF LS Seasonal week" = 6,
-            "ECMWF EDMD Seasonal week" = 7
+          c("ECMWF EFAS",
+            "E-HYPE",
+            "System 3",
+            "ECMWF LS Seasonal month",
+            "ECMWF EDMD Seasonal month",
+            "ECMWF LS Seasonal week",
+            "ECMWF EDMD Seasonal week"
           ),
-          selected = 2
+          selected = "E-HYPE"
         )
       ),
       
