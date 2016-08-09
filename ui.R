@@ -106,7 +106,7 @@ shinyUI(
                     selected = "Streamflow"
                     ),
         selectInput("rtnForecastType",
-                    "Forecast System:",
+                    "Forecast Setup:",
                     c(ctlForecastType$forecastType)
                     ),
         selectInput("rtnScoreType",
