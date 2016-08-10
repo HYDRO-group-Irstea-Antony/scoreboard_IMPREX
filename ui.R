@@ -60,8 +60,9 @@ shinyUI(
       column(
       4,
       wellPanel(
-        
         uiOutput("CaseStudy"),
+        uiOutput("System"),
+        uiOutput("Setup")
         
         # selectInput(
         # "rtnCaseStudyOLD",
@@ -80,11 +81,6 @@ shinyUI(
         # selected = 1
         # ),
 
-        uiOutput("System"),
-        
-        uiOutput("Setup")
-        
-# >>>>>>> b1e392d... uiOutput / renderUI partout
       ),
       
       wellPanel(
@@ -93,13 +89,12 @@ shinyUI(
         uiOutput("ForecastType"),
         uiOutput("Location")
         # uiOutput("ScoreType")
-# >>>>>>> b1e392d... uiOutput / renderUI partout
       )
     ),
 
     column(
       8,
-      tabsetPanel(
+      tabsetPanel(id = "inTabset",
         type = "tabs",
 
         tabPanel(

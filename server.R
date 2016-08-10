@@ -60,13 +60,11 @@ ctlModelVariable <- arrange_(distinct(collect(tmpModelVariable, n=Inf)))
 
 # was filtering by multiple datapackageGUIDs before, not necessary now?
 tmpLocationName <- 
-  distinct(select(tbl.scores, locationID, dataPackageGUID))
+  distinct(select(tbl.scores, locationID, caseStudy))
 ctlLocationName <- collect(tmpLocationName)
 ctlLocationName <-
-  arrange_(ctlLocationName, "dataPackageGUID", "locationID")
+  arrange_(ctlLocationName, "caseStudy", "locationID")
 
-
-# >>>>>>> b1e392d... uiOutput / renderUI partout
 # # pdf-generating function:
 # makePdf <- function(filename, plotObject){
 #   pdf(file = filename)
@@ -86,17 +84,24 @@ ctlLocationName <-
 
 shinyServer(function(input, output, session) {
   
+# trying out deps on caseStudy
+  observe({
+    tmpLocationName <- 
+      distinct(select(tbl.scores, locationID, caseStudy))
+    ctlLocationName <- collect(tmpLocationName)
+    ctlLocationName <-
+      arrange_(ctlLocationName, "caseStudy", "locationID")
+  })
+  
   # define Filters
   output$CaseStudy <- renderUI({
     if(is.null(ctlCaseStudy))
       return()
-    # CaseStudy <- ctlCaseStudy$ObjectItemName
     CaseStudy <- setNames(ctlCaseStudy$ObjectInteger, ctlCaseStudy$ObjectItemName)
-    # CaseStudy = paste(ctlCaseStudy$ObjectItemName, "\"=\"", ctlCaseStudy$ObjectInteger )
+    # CaseStudy = paste(ctlCaseStudy$ObjectItemName, "\"=\"", ctlCaseStudy$ObjectInteger ) # not the way
     selectInput("rtnCaseStudy", "Case Study (DB):", choices = CaseStudy, multiple = F)
   })
 
-  #ex E-HYPE (was forecastSystem)
   output$System <- renderUI({
     if(is.null(ctlSystem))
       return()
@@ -109,7 +114,14 @@ shinyServer(function(input, output, session) {
   output$Location <- renderUI({
     if (is.null(ctlLocationName))
       return()
-    Location <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
+    # if(!is.null(output$CaseStudy))
+    # {
+    #   Location <- filter(ctlLocationName, caseStudy == output$CaseStudy)
+    #   Location <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
+    # }
+    # else {
+      Location <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
+    # }
     selectInput("rtnLocid","Location: ", choices = structure(Location), multiple=T)
   })
   
@@ -247,7 +259,6 @@ shinyServer(function(input, output, session) {
   }) 
   
   output$facetPlot <- renderPlot({
-
     if (nrow(filtSkillScores()) == 0 || length(filtSkillScores()) == 0) {
       plot(1, 1, col = "white")
       text(1,1,"Select one or more data elements from the Filter to begin")
