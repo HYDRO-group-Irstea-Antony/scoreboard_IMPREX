@@ -78,8 +78,8 @@ shinyUI(
 
         tabPanel(
           "Plot",
-          h4("Plot"),
-          p("Plot a score over lead times for one or more locations"),
+          # h4("Plot a score over lead times"),
+          # p("Plot a score over lead times for one or more locations"),
           plotOutput("seriesPlot") ,
           
           uiOutput("ScoreTypeSingle"),
@@ -97,8 +97,8 @@ shinyUI(
         ),
         tabPanel(
           "Panel plots",
-          h4("Select and filter data to create "),
-          p("Plot scores by selected location(s)"),
+          # h4("Select and filter data to create "),
+          # p("Plot scores by selected location(s)"),
           plotOutput("facetPlot"),
 
           uiOutput("AllScoreTypes"),

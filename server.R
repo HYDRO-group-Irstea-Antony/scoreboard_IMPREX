@@ -235,11 +235,11 @@ shinyServer(function(input, output, session) {
       # have data
       filtered.input <- filtInput() # debug rename in summarySE
       loc.sum <- summarySE(
-          filtered.input,
-          measurevar = "scoreValue",
-          groupvars = c("locationID", "leadtimeValue", "scoreType", "forecastType"), 
-          na.rm = TRUE
-        )
+        filtered.input,
+        measurevar = "scoreValue",
+        groupvars = c("locationID", "datePartUnit", "leadtimeValue", "scoreType", "forecastType"),  # GT
+        na.rm = TRUE
+      )
       loc.sum$locationID <- as.factor(loc.sum$locationID)
       na.count <- sum(filtered.input$scoreNA) 
     } # end else
@@ -251,10 +251,15 @@ shinyServer(function(input, output, session) {
       pd <- position_dodge(0.2)
       ggplot(loc.sum,
              aes(color = locationID, x = leadtimeValue, y = scoreValue)) +
-        geom_line() +
+        geom_line(size = 1) +
         geom_point(aes(color = locationID)) + 
-        xlab("Lead Times") + 
-        ylab(paste("SCORE: ", input$rtnScoreType))
+        xlab(paste("Lead Times (", loc.sum$datePartUnit,")", sep="")) + 
+        ylab(paste("SCORE: ", loc.sum$scoreType)) +
+        theme_bw() + 
+        theme(panel.grid.major = element_line(colour = NA)) +
+        theme(axis.text = element_text(size=14, vjust=0.5)) +
+        theme(legend.text = element_text(size=14, vjust=0.5)) +
+        theme(title = element_text(size = 14))
     } 
   }) 
   
@@ -270,7 +275,8 @@ shinyServer(function(input, output, session) {
       loc.sum <- summarySE(
           filtered.input,
           measurevar = "scoreValue",
-          groupvars = c("locationID", "leadtimeValue", "scoreType", "forecastType"), # "locationID", "leadtimeValue"
+          groupvars = c("locationID", "datePartUnit", 
+                        "leadtimeValue", "scoreType", "forecastType"), # GT
           na.rm = TRUE
         )
       loc.sum$locationID <- as.factor(loc.sum$locationID)
@@ -285,14 +291,23 @@ shinyServer(function(input, output, session) {
       # pd <- position_dodge(0.2)
       loc.count <- length(loc.sum$locationID)
 
-      ggplot(loc.sum, aes(x = leadtimeValue, y = scoreValue ) ) +
+      ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
+        geom_line(size = 1) +
         geom_point(aes(color = locationID)) +
         # facet_wrap(scoreType ~ locationID, nrow = loc.count) +
-        facet_grid(scoreType ~ locationID) + #margin = TRUE
+        facet_grid(scoreType ~ locationID, scales = "free_y") + #margin = TRUE
         geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
-        xlab("Lead Times") +
-        ylab("Scores")
-    }
+        xlab(paste("Lead Times (",loc.sum$datePartUnit,")", sep="")) + 
+        ylab("Scores") +
+        theme_bw() + 
+        theme(panel.grid.major = element_line(colour = NA)) +
+        theme(axis.text = element_text(size=14, vjust=0.5)) +
+        theme(legend.text = element_text(size=14, vjust=0.5)) +
+        theme(title = element_text(size = 14)) + 
+        scale_x_discrete(limits = loc.sum$leadtimeValue) + 
+        theme(panel.margin.x = unit(2 / (length(unique(loc.sum$locationID)) - 1), "lines")) +
+        theme(panel.margin.y = unit(2 / (length(unique(loc.sum$scoreType)) - 1), "lines")) +
+        theme(strip.text = element_text(size=14, vjust=0.5))    }
     
   })
   
