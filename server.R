@@ -59,7 +59,7 @@ tmpModelVariable <-
 ctlModelVariable <- arrange_(distinct(collect(tmpModelVariable, n=Inf)))
 
 # was filtering by multiple datapackageGUIDs before, not necessary now?
-tmpLocationName <- 
+tmpLocationName <-
   distinct(select(tbl.scores, locationID, caseStudy))
 ctlLocationName <- collect(tmpLocationName)
 ctlLocationName <-
@@ -85,13 +85,24 @@ ctlLocationName <-
 shinyServer(function(input, output, session) {
   
 # trying out deps on caseStudy
-  observe({
-    tmpLocationName <- 
-      distinct(select(tbl.scores, locationID, caseStudy))
-    ctlLocationName <- collect(tmpLocationName)
-    ctlLocationName <-
-      arrange_(ctlLocationName, "caseStudy", "locationID")
-  })
+  # location.list <- reactive({
+  #   if(is.null(input$rtnCaseStudy))
+  #     return()
+  #   remote <- filter(remote,
+  #                    caseStudy == input$rtnCaseStudy
+  #   )
+  #   getit <- structure(collect(remote)) #database hit
+  #   # browser()
+  #   return(getit$locationID)
+  # })
+  
+  # observe({
+  #   tmpLocationName <- 
+  #     distinct(select(tbl.scores, locationID, caseStudy))
+  #   ctlLocationName <- collect(tmpLocationName)
+  #   ctlLocationName <-
+  #     arrange_(ctlLocationName, "caseStudy", "locationID")
+  # })
   
   # define Filters
   output$CaseStudy <- renderUI({
@@ -99,7 +110,7 @@ shinyServer(function(input, output, session) {
       return()
     CaseStudy <- setNames(ctlCaseStudy$ObjectInteger, ctlCaseStudy$ObjectItemName)
     # CaseStudy = paste(ctlCaseStudy$ObjectItemName, "\"=\"", ctlCaseStudy$ObjectInteger ) # not the way
-    selectInput("rtnCaseStudy", "Case Study (DB):", choices = CaseStudy, multiple = F)
+    selectInput("rtnCaseStudy", "Case Study:", choices = CaseStudy, multiple = F)
   })
 
   output$System <- renderUI({
@@ -111,7 +122,7 @@ shinyServer(function(input, output, session) {
   
   # note - set choices=character(0) to reset selections 
   
-  output$Location <- renderUI({
+  output$Locations <- renderUI({
     if (is.null(ctlLocationName))
       return()
     # if(!is.null(output$CaseStudy))
@@ -120,9 +131,9 @@ shinyServer(function(input, output, session) {
     #   Location <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
     # }
     # else {
-      Location <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
+      Locations <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
     # }
-    selectInput("rtnLocid","Location: ", choices = structure(Location), multiple=T)
+    selectInput("rtnLocid","Location(s): ", choices = structure(Locations), multiple=T)
   })
   
 # setup ex Bias Corr 1 (was forecastType)
@@ -136,14 +147,14 @@ shinyServer(function(input, output, session) {
     }
   })
 
-  output$ScoreType <- renderUI({
+  output$ScoreTypes <- renderUI({
     if(!is.null(ctlScoreType)) {
       # ScoreType <- structure(ctlScoreType)
-      ScoreType <- structure(ctlScoreType$scoreType)
+      ScoreTypes <- structure(ctlScoreType$scoreType)
     }
     selectInput("rtnAllScoreTypes",
                 "Score Type(s)", 
-                choices = ScoreType, 
+                choices = ScoreTypes, 
                 multiple=T,
                 selected = c("RMSE Skill Score",
                              "Brier Skill Score",
@@ -164,8 +175,6 @@ shinyServer(function(input, output, session) {
     selectInput("rtnModelVariable","Variable: ", choices = structure(ModelVariable), multiple=F)
   })
   
-
-# >>>>>>> b1e392d... uiOutput / renderUI partout
   filtInput <- reactive({
     validate(
       need(input$rtnLocid != "", "Please select at least one location")
@@ -181,10 +190,9 @@ shinyServer(function(input, output, session) {
     }
     remote <- filter(remote,
       caseStudy == input$rtnCaseStudy &
-      forecastSystem == input$rtnForecastSystem  & # ehype
-      # scoreNA == FALSE & #more like "bad data" now, contains -Infinity too
+      forecastSystem == input$rtnForecastSystem  & # ex ehype
       modelVariable == input$rtnModelVariable &
-      forecastType == input$rtnForecastType & # Bias Corr 1
+      forecastType == input$rtnForecastType & # ex Bias Corr 1
       scoreType == input$rtnScoreType
     )
     getit <- structure(collect(remote)) #database hit
@@ -215,7 +223,34 @@ shinyServer(function(input, output, session) {
     )
     getit <- structure(collect(remote)) #database hit
   }) #end reactive
+
+  compareSkillScores <- reactive({
+    validate(
+      need(input$rtnLocid != "", "Please select at least one location and one or more Forecast Setups to plot")
+    )
+    
+    # list.skill.scores <- input$rtnAllScoreTypes
+    
+    if (length(input$rtnLocid) == 1) {
+      remote <- filter(tbl.scores,
+                       locationID == input$rtnLocid)
+    }
+    else if (length(input$rtnLocid) > 1){
+      remote <- filter(tbl.scores,
+                       locationID %in% input$rtnLocid)
+    }
+    remote <- filter(remote,
+                     caseStudy == input$rtnCaseStudy &
+                       forecastSystem == input$rtnForecastSystem  &
+                       # scoreNA == FALSE & #more like "bad data" now, contains -Infinity too
+                       modelVariable == input$rtnModelVariable &
+                       forecastType == input$rtnForecastType &
+                       scoreType %in% list.skill.scores
+    )
+    getit <- structure(collect(remote)) #database hit
+  }) #end reactive
   
+    
   output$summary <- renderPrint({
     dataset <- filtInput()
     dataset <- within(
@@ -311,14 +346,13 @@ shinyServer(function(input, output, session) {
     
   })
   
-# # main plot
-#   output$downloadMainPlot <- downloadHandler(
-#     
-#     filename = function() { paste(input$dataset, '.png', sep='') },
-#     content = function(file) {
-#       ggsave(file, plot = "facetPlot", device = "png")
-#     }
-#   )  
+# main plot
+  output$downloadMainPlot <- downloadHandler(
+    filename = function() { paste(input$dataset, '.png', sep='') },
+    content = function(file) {
+      ggsave(file, plot = "seriesPlot", device = "png")
+    }
+  )
   
 }) # end shinyServer
 

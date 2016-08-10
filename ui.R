@@ -66,7 +66,7 @@ shinyUI(
         h4("Filter Criteria"),
         uiOutput("ModelVariable"),
         uiOutput("ForecastType"),
-        uiOutput("Location")
+        uiOutput("Locations")
         # uiOutput("ScoreType")
       )
     ),
@@ -79,42 +79,47 @@ shinyUI(
         tabPanel(
           "Plot",
           # h4("Plot a score over lead times"),
-          # p("Plot a score over lead times for one or more locations"),
-          plotOutput("seriesPlot") ,
-          
-          uiOutput("ScoreTypeSingle"),
-          #output pdf
           wellPanel(
-            h4("Save Plot") ,
-            # sidebarPanel(
-            checkboxInput('save', 'save your Plot?', FALSE),
-            conditionalPanel(
-            condition = "input.save == true",
-            br(),
-              downloadButton('downloadMainPlot')
-            )
-          )
+            column(5,
+                   uiOutput("ScoreTypeSingle")
+                   ),
+            column(3,
+                   checkboxInput('save', 'Save Plot?', FALSE),
+                   conditionalPanel(
+                     condition = "input.save == true",
+                     # br(),
+                     downloadButton('downloadMainPlot')
+                     )
+                   ),
+              hr()
+            ),
+          plotOutput("seriesPlot")
+          
         ),
         tabPanel(
           "Panel plots",
           # h4("Select and filter data to create "),
-          # p("Plot scores by selected location(s)"),
-          plotOutput("facetPlot"),
-
-          uiOutput("AllScoreTypes"),
-          uiOutput("ScoreType"),
-          
+          # explore pauses: invalidateLater(2000, session)  # 2 seconds
           #output pdf
           wellPanel(
-            h4("Save Plot") ,
-            checkboxInput('savePP', 'save your Panel Plot?', FALSE),
-            conditionalPanel(
-              condition = "input.savePP == true",
-              br(),
-              textInput("pngname", "Filename", "my.png"),
-              downloadButton("downloadPanelPlot", "Download File")
-            )
-          )
+            column(6,
+                   uiOutput("ScoreTypes")
+
+            ),
+            column(2,
+              checkboxInput('savePP', 'Save Plots?', FALSE),
+              conditionalPanel(
+                condition = "input.savePP == true",
+                textInput("pngname", "Filename", "my.png"),
+                downloadButton("downloadPanelPlot", "Download File")
+              )
+            ),
+            hr()
+          ),
+          
+          # invalidateLater(2000, session),
+          plotOutput("facetPlot")
+          
         ),
         
         tabPanel(
@@ -124,12 +129,27 @@ shinyUI(
           verbatimTextOutput("summary")
         ),
         
-        # TODO define and test RDS, possibly CSV/TXT file uploads
         tabPanel(
           "Compare Skill Scores",
-          h4("Compare only skill scores"),
-          p("")
-          
+          # h4("Compare only skill scores"),
+          # p("Something to add here, controls buggy?")
+          wellPanel(
+            column(4,
+                   p("repeated from leftbar")
+                   # uiOutput("System"),
+                   # uiOutput("Setup")
+                   # uiOutput("System"),
+                   # uiOutput("Setup"),
+                   # uiOutput("ScoreTypes"), # mutiple = T
+                   # uiOutput("Locations")
+            ),
+            column(4,
+                   p("some more static stuff")
+                   # uiOutput("System")
+                   # uiOutput("Setup")
+            ),
+          br()
+          )
         ),
         
         # TODO define and test RDS, possibly CSV/TXT file uploads
