@@ -1,6 +1,6 @@
-#IMPREX Scoreboard v0.1
-setwd("~/R/shinysb1/sbdtest1")
-readRenviron("~/R/shinysb1/.Renviron")
+#IMPREX Scoreboard v0.2
+# setwd("~/R/shinysb1/sbdtest1")
+readRenviron("~/R/.Renviron")
 REhost =     Sys.getenv('pgserver')
 REport =     Sys.getenv('pgport')
 REdbname =   Sys.getenv('pgdb')
@@ -26,35 +26,31 @@ tbl.scores <- tbl(db, "tblScores")
 tbl.dataload <- tbl(db, "tblDataLoad")
 tbl.interface <- tbl(db, "tblInterface")
 
-# TODO move to server; clean up DB and 3NF tables; speed up init
-tmpCaseStudy <-
-  filter(tbl(db, "tblInterface"),
-         ObjectName == "Case Study" & LanguageID == RElanguage)
-ctlCaseStudy <- collect(tmpCaseStudy)
-
-tmpScoreType <-
-  select(tbl.scores, scoreType)
-ctlScoreType <- arrange_(distinct(collect(tmpScoreType, n=Inf)))
-
-tmpModelVariable <-
-  filter(tbl(db, "tblInterface"),
-         ObjectName == "Model Variable" & LanguageID == RElanguage)
-ctlModelVariable <- collect(tmpModelVariable)
-
-tmpLocationName <-
-  distinct(select(tbl.scores, locationID, dataPackageGUID))
-ctlLocationName <- collect(tmpLocationName)
-ctlLocationName <-
-  arrange_(ctlLocationName, "dataPackageGUID", "locationID")
-
-tmpForecastType <-
-  select(tbl.scores, forecastType)
-ctlForecastType <- arrange_(distinct(collect(tmpForecastType, n=Inf)))
-
 shinyUI(
   fluidPage(
-    img(src = "imprex.png", height = 100),
-    titlePanel("Scoreboard"),
+    div(style="float:right",
+        paste("Connected to ", db$info$host, " as ", db$info$user)
+        
+        # # checkboxInput("hideme", "Hide: ", value = FALSE),
+        # # conditionalPanel("hideme==='FALSE'",
+        #                  observe({
+        #                    # check for session$onSessionEnded perhaps
+        #                    if (!is.null(db$con)){
+        #                      paste("Connected to ", db$info$host, " as ", db$info$user)
+        #                    } else {
+        #                      "database not connected, loading localdefault RDS file"
+        #                    }
+        #                    # selectInput("rtnConnec","Connected to: ", choices = c("database", "RDS file"), multiple=F)
+        #                  })
+        #                # )
+        
+    ),
+    div(style="padding: 1px 0px; width: '100%'",
+        titlePanel("Scoreboard"),
+        img(src = "imprex.png", height = 100)
+    ),
+    # div(style="float:left",
+    # ),
     
     fluidRow(
       column(
@@ -63,23 +59,6 @@ shinyUI(
         uiOutput("CaseStudy"),
         uiOutput("System"),
         uiOutput("Setup")
-        
-        # selectInput(
-        # "rtnCaseStudyOLD",
-        # "Case Study:",
-        # c(
-        #   "Central European Rivers" = 1,
-        #   "South-East French Catchments" = 2,
-        #   "Júcar River Basin (Spain)" = 3,
-        #   "Lake Como Basin (Italy)" = 4,
-        #   "Upper Umeälven River (Sweden)" = 5,
-        #   "Segura River Basin (Iberian Peninsula)" = 6,
-        #   "The Llobregat River Basin (Spain)" = 7,
-        #   "The Messara Valley (Crete)" = 8,
-        #   "Test Case Study (LC)" = 9
-        # ),
-        # selected = 1
-        # ),
 
       ),
       
@@ -125,7 +104,6 @@ shinyUI(
           uiOutput("AllScoreTypes"),
           uiOutput("ScoreType"),
           
-# >>>>>>> b1e392d... uiOutput / renderUI partout
           #output pdf
           wellPanel(
             h4("Save Plot") ,
@@ -137,8 +115,6 @@ shinyUI(
               downloadButton("downloadPanelPlot", "Download File")
             )
           )
-          
-          
         ),
         
         tabPanel(
@@ -155,7 +131,6 @@ shinyUI(
           p("")
           
         ),
-        
         
         # TODO define and test RDS, possibly CSV/TXT file uploads
         tabPanel(
