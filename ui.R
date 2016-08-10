@@ -63,74 +63,37 @@ shinyUI(
         
         uiOutput("CaseStudy"),
         
-        selectInput(
-        "rtnCaseStudyOLD",
-        "Case Study:",
-        c(
-          "Central European Rivers" = 1,
-          "South-East French Catchments" = 2,
-          "Júcar River Basin (Spain)" = 3,
-          "Lake Como Basin (Italy)" = 4,
-          "Upper Umeälven River (Sweden)" = 5,
-          "Segura River Basin (Iberian Peninsula)" = 6,
-          "The Llobregat River Basin (Spain)" = 7,
-          "The Messara Valley (Crete)" = 8,
-          "Test Case Study (LC)" = 9
-        ),
-        selected = 1
-        ),
-<<<<<<< HEAD
+        # selectInput(
+        # "rtnCaseStudyOLD",
+        # "Case Study:",
+        # c(
+        #   "Central European Rivers" = 1,
+        #   "South-East French Catchments" = 2,
+        #   "Júcar River Basin (Spain)" = 3,
+        #   "Lake Como Basin (Italy)" = 4,
+        #   "Upper Umeälven River (Sweden)" = 5,
+        #   "Segura River Basin (Iberian Peninsula)" = 6,
+        #   "The Llobregat River Basin (Spain)" = 7,
+        #   "The Messara Valley (Crete)" = 8,
+        #   "Test Case Study (LC)" = 9
+        # ),
+        # selected = 1
+        # ),
 
-        selectInput(
-          "rtnForecastSystem",
-          "System:",
-          c("ECMWF EFAS",
-            "E-HYPE",
-            "System 3",
-            "ECMWF LS Seasonal month",
-            "ECMWF EDMD Seasonal month",
-            "ECMWF LS Seasonal week",
-            "ECMWF EDMD Seasonal week"
-          ),
-          selected = "E-HYPE"
-        )
-=======
-        
         uiOutput("System"),
         
         uiOutput("Setup")
         
->>>>>>> b1e392d... uiOutput / renderUI partout
+# >>>>>>> b1e392d... uiOutput / renderUI partout
       ),
       
       wellPanel(
         h4("Filter Criteria"),
-<<<<<<< HEAD
-        
-        selectInput("rtnLocid",
-                    multiple = TRUE,
-                    "Location(s):",
-                    c(ctlLocationName$locationID
-                    )),
-        selectInput("rtnModelVariable",
-                    "Variable:",
-                    c(sort.int(ctlModelVariable$ObjectItemName)),
-                    selected = "Streamflow"
-                    ),
-        selectInput("rtnForecastType",
-                    "Forecast Setup:",
-                    c(ctlForecastType$forecastType)
-                    ),
-        selectInput("rtnScoreType",
-                    "Score:",
-                    c(sort.int(ctlScoreType$scoreType))
-                    )
-=======
         uiOutput("ModelVariable"),
         uiOutput("ForecastType"),
         uiOutput("Location")
         # uiOutput("ScoreType")
->>>>>>> b1e392d... uiOutput / renderUI partout
+# >>>>>>> b1e392d... uiOutput / renderUI partout
       )
     ),
 
@@ -163,21 +126,11 @@ shinyUI(
           h4("Select and filter data to create "),
           p("Plot scores by selected location(s)"),
           plotOutput("facetPlot"),
-<<<<<<< HEAD
-          selectInput("rtnAllScoreTypes",
-                      multiple = TRUE,
-                      "Score(s):",
-                      c(sort.int(ctlScoreType$scoreType)),
-                      selected = c("RMSE Skill Score",
-                                  "Brier Skill Score",
-                                  "CRPS Skill Score"
-                      )
-          ),
-=======
+
           uiOutput("AllScoreTypes"),
           uiOutput("ScoreType"),
           
->>>>>>> b1e392d... uiOutput / renderUI partout
+# >>>>>>> b1e392d... uiOutput / renderUI partout
           #output pdf
           wellPanel(
             h4("Save Plot") ,

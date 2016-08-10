@@ -28,8 +28,6 @@ tbl.interface <- tbl(db, "tblInterface")
 tbl.forecastsetup <- tbl(db, "tblForecastSetup")
 # totes <- cbind(tbl.scores$forecastSetup, tbl.forecastsetup)
 
-<<<<<<< HEAD
-=======
 # enc2utf8
 # defined within the interface table
 tmpCaseStudy <-
@@ -68,7 +66,7 @@ ctlLocationName <-
   arrange_(ctlLocationName, "dataPackageGUID", "locationID")
 
 
->>>>>>> b1e392d... uiOutput / renderUI partout
+# >>>>>>> b1e392d... uiOutput / renderUI partout
 # # pdf-generating function:
 # makePdf <- function(filename, plotObject){
 #   pdf(file = filename)
@@ -88,8 +86,6 @@ ctlLocationName <-
 
 shinyServer(function(input, output, session) {
   
-<<<<<<< HEAD
-=======
   # define Filters
   output$CaseStudy <- renderUI({
     if(is.null(ctlCaseStudy))
@@ -157,7 +153,7 @@ shinyServer(function(input, output, session) {
   })
   
 
->>>>>>> b1e392d... uiOutput / renderUI partout
+# >>>>>>> b1e392d... uiOutput / renderUI partout
   filtInput <- reactive({
     validate(
       need(input$rtnLocid != "", "Please select at least one location")
