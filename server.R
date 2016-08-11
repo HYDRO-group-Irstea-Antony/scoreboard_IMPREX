@@ -80,18 +80,7 @@ shinyServer(function(input, output, session) {
   #   return(getit$locationID)
   # })
   
-  observe({
-    if(is.null(input$rtnCaseStudy))
-      return()
-    updateSelectInput(session, "Locations", choices = filter(ctlLocationName, caseStudy==input$rtnCaseStudy))
-    # tmpLocationName <-
-    #   distinct(select(tbl.scores, locationID, caseStudy))
-    # ctlLocationName <- collect(tmpLocationName)
-    # ctlLocationName <-
-    #   arrange_(ctlLocationName, "caseStudy", "locationID")
-  })
-  
-  # define Filters
+  # define heirarchical Filters
   output$CaseStudy <- renderUI({
     if(is.null(ctlCaseStudy))
       return()
@@ -101,10 +90,19 @@ shinyServer(function(input, output, session) {
   })
 
   output$System <- renderUI({
-    if(is.null(ctlSystem))
-      return()
+    x <- input$rtnCaseStudy
+    browser()
+    if (any(
+      is.null(x)
+    )) 
+      return("System:")
     System <- ctlSystem$ObjectItemName
     selectInput("rtnForecastSystem", "System:", choices = System, multiple = F, selected = "E-HYPE")
+
+    # if(is.null(ctlSystem))
+    #   return()
+    # System <- ctlSystem$ObjectItemName
+    # selectInput("rtnForecastSystem", "System:", choices = System, multiple = F, selected = "E-HYPE")
   })
   
   #used in Comp Skill Score only
