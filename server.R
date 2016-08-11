@@ -66,23 +66,6 @@ ctlLocationName <- collect(tmpLocationName)
 ctlLocationName <-
   arrange_(ctlLocationName, "caseStudy", "locationID")
 
-# # pdf-generating function:
-# makePdf <- function(filename, plotObject){
-#   pdf(file = filename)
-#   g <- plotObject
-#   
-#   # plot(cars)
-#   dev.off()
-# }
-# 
-# makePng <- function(filename, pngObject){
-#   png::writePNG(pngObject)
-#   # pdf(file = filename)
-#   g <- pngObject
-#   # plot(cars)
-#   dev.off()
-# }
-
 shinyServer(function(input, output, session) {
   
 # trying out deps on caseStudy
@@ -112,8 +95,7 @@ shinyServer(function(input, output, session) {
   output$CaseStudy <- renderUI({
     if(is.null(ctlCaseStudy))
       return()
-    CaseStudy <- setNames(ctlCaseStudy$ObjectInteger, ctlCaseStudy$ObjectItemName)
-    # CaseStudy = paste(ctlCaseStudy$ObjectItemName, "\"=\"", ctlCaseStudy$ObjectInteger ) # not the way
+    CaseStudy <- setNames(ctlCaseStudy$ObjectInteger, iconv(ctlCaseStudy$ObjectItemName, "UTF-8")) # to get the Swedish / spanish chars
     selectInput("rtnCaseStudy", 
                 paste("Case Study: (",length(unique(ctlCaseStudy$ObjectItemName)), ")"), choices = CaseStudy, multiple = F)
   })
@@ -125,9 +107,30 @@ shinyServer(function(input, output, session) {
     selectInput("rtnForecastSystem", "System:", choices = System, multiple = F, selected = "E-HYPE")
   })
   
-  # note - set choices=character(0) to reset selections 
+  #used in Comp Skill Score only
+  output$System2 <- renderUI({
+    if(is.null(ctlSystem))
+      return()
+    System <- ctlSystem$ObjectItemName
+    selectInput("rtnForecastSystem", "System:", choices = System, multiple = F, selected = "E-HYPE")
+  })
   
+    # note - set choices=character(0) to reset selections 
   output$Locations <- renderUI({
+    if (is.null(ctlLocationName))
+      return()
+    # if(!is.null(output$CaseStudy))
+    # {
+    #   Location <- filter(ctlLocationName, caseStudy == output$CaseStudy)
+    #   Location <- ctlLocationName$locationID 
+    # }
+    # else {
+      Locations <- ctlLocationName$locationID
+    # }
+    selectInput("rtnLocid","Location(s): ", choices = structure(Locations), multiple=T)
+  })
+  
+  output$LocationsAll <- renderUI({
     if (is.null(ctlLocationName))
       return()
     # if(!is.null(output$CaseStudy))
@@ -136,11 +139,11 @@ shinyServer(function(input, output, session) {
     #   Location <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
     # }
     # else {
-      Locations <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
+    Locations <- c("All", ctlLocationName$locationID)
     # }
     selectInput("rtnLocid","Location(s): ", choices = structure(Locations), multiple=T)
   })
-  
+
 # setup ex Bias Corr 1 (was forecastType)
   output$Setup <- renderUI({
     if(!is.null(ctlSetup)) {
@@ -152,7 +155,16 @@ shinyServer(function(input, output, session) {
     }
   })
 
-  output$ScoreTypes <- renderUI({
+  output$Setup2 <- renderUI({
+    if(!is.null(ctlSetup)) {
+      Setup <- c(ctlSetup$forecastSetup)
+      selectInput("rtnForecastType","Forecast Setup: ", 
+                  choices = structure(Setup), 
+                  multiple=F)
+    }
+  })
+  
+    output$ScoreTypes <- renderUI({
     if(!is.null(ctlScoreType)) {
       # ScoreType <- structure(ctlScoreType)
       ScoreTypes <- structure(ctlScoreType$scoreType)
@@ -189,10 +201,11 @@ shinyServer(function(input, output, session) {
       remote <- filter(tbl.scores,
                        locationID == input$rtnLocid)
     }
-    else if (length(input$rtnLocid) > 1){
+    else if (length(input$rtnLocid) > 1) {
       remote <- filter(tbl.scores,
                        locationID %in% input$rtnLocid)
     }
+    
     remote <- filter(remote,
       caseStudy == input$rtnCaseStudy &
       forecastSystem == input$rtnForecastSystem  & # ex ehype
@@ -200,21 +213,20 @@ shinyServer(function(input, output, session) {
       forecastType == input$rtnForecastType & # ex Bias Corr 1
       scoreType == input$rtnScoreType
     )
-    getit <- structure(collect(remote)) #database hit
+    getit <- structure(collect(remote))
   }) #end reactive
   
   filtSkillScores <- reactive({
     validate(
       need(input$rtnLocid != "", "Please select at least one location and one or more scores (below)")
     )
-    
     list.skill.scores <- input$rtnAllScoreTypes
 
     if (length(input$rtnLocid) == 1) {
       remote <- filter(tbl.scores,
                        locationID == input$rtnLocid)
     }
-    else if (length(input$rtnLocid) > 1){
+    else if (length(input$rtnLocid) > 1) {
       remote <- filter(tbl.scores,
                        locationID %in% input$rtnLocid)
     }
@@ -224,9 +236,9 @@ shinyServer(function(input, output, session) {
                        # scoreNA == FALSE & #more like "bad data" now, contains -Infinity too
                        modelVariable == input$rtnModelVariable &
                        forecastType == input$rtnForecastType &
-                       scoreType %in% list.skill.scores
+                       scoreType %in% list.skill.scores # TODO if only 1 selected?? (do as compareSkillScores below)
     )
-    getit <- structure(collect(remote)) #database hit
+    getit <- structure(collect(remote)) 
   }) #end reactive
 
   compareSkillScores <- reactive({
@@ -234,28 +246,32 @@ shinyServer(function(input, output, session) {
       need(input$rtnLocid != "", "Please select at least one location and one or more Forecast Setups to plot")
     )
     
-    # list.skill.scores <- input$rtnAllScoreTypes
-    
     if (length(input$rtnLocid) == 1) {
       remote <- filter(tbl.scores,
                        locationID == input$rtnLocid)
     }
-    else if (length(input$rtnLocid) > 1){
+    else if (length(input$rtnLocid) > 1) {
       remote <- filter(tbl.scores,
                        locationID %in% input$rtnLocid)
     }
+
+    if (length(input$scoreType) == 1) {
+      remote <- filter(tbl.scores,
+                      scoreType == input$scoreType)
+    } else {
+      remote <- filter(tbl.scores,
+                       scoreType %in% input$scoreType)
+    }
+    
     remote <- filter(remote,
                      caseStudy == input$rtnCaseStudy &
                        forecastSystem == input$rtnForecastSystem  &
-                       # scoreNA == FALSE & #more like "bad data" now, contains -Infinity too
                        modelVariable == input$rtnModelVariable &
-                       forecastType == input$rtnForecastType &
-                       scoreType %in% list.skill.scores
+                       forecastType == input$rtnForecastType
     )
     getit <- structure(collect(remote)) #database hit
   }) #end reactive
-  
-    
+
   output$summary <- renderPrint({
     dataset <- filtInput()
     dataset <- within(
@@ -265,21 +281,21 @@ shinyServer(function(input, output, session) {
   })
   
   output$seriesPlot <- renderPlot({
+    validate(
+      need(!is.null(filtInput()), "Select one or more data elements from the Filter to begin")
+    )
     if (nrow(filtInput()) == 0 || length(filtInput()) == 0) {
       plot(1, 1, col = "white")
       text(1, 1,"Select one or more data elements from the Filter to begin")
     }
     else if (nrow(filtInput()) == 0 || length(filtInput()) == 0) {
       text(1, 1, "filtInput() was empty, try a different combo")
-    } else {
-      # have data
+    } else {      # have data
       filtered.input <- filtInput() # debug rename in summarySE
-      loc.sum <- summarySE(
-        filtered.input,
+      loc.sum <- summarySE(filtered.input,
         measurevar = "scoreValue",
         groupvars = c("locationID", "datePartUnit", "leadtimeValue", "scoreType", "forecastType"),  # GT
-        na.rm = TRUE
-      )
+        na.rm = TRUE)
       loc.sum$locationID <- as.factor(loc.sum$locationID)
       na.count <- sum(filtered.input$scoreNA) 
     } # end else
@@ -301,9 +317,12 @@ shinyServer(function(input, output, session) {
         theme(legend.text = element_text(size=14, vjust=0.5)) +
         theme(title = element_text(size = 14))
     } 
-  }) 
+  })
   
   output$facetPlot <- renderPlot({
+    validate(
+      need(!is.null(filtSkillScores()), "Select one or more data elements from the Filter to begin")
+    )
     if (nrow(filtSkillScores()) == 0 || length(filtSkillScores()) == 0) {
       plot(1, 1, col = "white")
       text(1,1,"Select one or more data elements from the Filter to begin")
@@ -327,37 +346,65 @@ shinyServer(function(input, output, session) {
       plot(1, 1, col = "white")
       text(1, 1, "The database doesn't have information on this combination of variables (yet)")
     } else {
-
-      # pd <- position_dodge(0.2)
-      loc.count <- length(loc.sum$locationID)
-
-      ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
-        geom_line(size = 1) +
-        geom_point(aes(color = locationID)) +
-        # facet_wrap(scoreType ~ locationID, nrow = loc.count) +
-        facet_grid(scoreType ~ locationID, scales = "free_y") + #margin = TRUE
-        geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
-        xlab(paste("Lead Times (",loc.sum$datePartUnit,")", sep="")) + 
-        ylab("Scores") +
-        theme_bw() + 
-        theme(panel.grid.major = element_line(colour = NA)) +
-        theme(axis.text = element_text(size=14, vjust=0.5)) +
-        theme(legend.text = element_text(size=14, vjust=0.5)) +
-        theme(title = element_text(size = 14)) + 
-        scale_x_discrete(limits = loc.sum$leadtimeValue) + 
-        theme(panel.margin.x = unit(2 / (length(unique(loc.sum$locationID)) - 1), "lines")) +
-        theme(panel.margin.y = unit(2 / (length(unique(loc.sum$scoreType)) - 1), "lines")) +
-        theme(strip.text = element_text(size=14, vjust=0.5))    }
-    
-  })
+          # loc.count <- length(loc.sum$locationID)
+        # plotInput <- 
+          ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
+            geom_line(size = 1) +
+            geom_point(aes(color = locationID)) +
+            facet_grid(scoreType ~ locationID, scales = "free_y") + #margin = TRUE
+            geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
+            xlab(paste("Lead Times (",loc.sum$datePartUnit,")", sep="")) + 
+            ylab("Scores") +
+            theme_bw() + 
+            theme(panel.grid.major = element_line(colour = NA)) +
+            theme(axis.text = element_text(size=14, vjust=0.5)) +
+            theme(legend.text = element_text(size=14, vjust=0.5)) +
+            theme(title = element_text(size = 14)) + 
+            scale_x_discrete(limits = loc.sum$leadtimeValue) + 
+            theme(panel.margin.x = unit(2 / (length(unique(loc.sum$locationID)) - 1), "lines")) +
+            theme(panel.margin.y = unit(2 / (length(unique(loc.sum$scoreType)) - 1), "lines")) +
+            theme(strip.text = element_text(size=14, vjust=0.5))    
+      }
+  }) #renderPlot
   
 # main plot
   output$downloadMainPlot <- downloadHandler(
-    filename = function() { paste(input$dataset, '.png', sep='') },
-    content = function(file) {
-      ggsave(file, plot = "seriesPlot", device = "png")
-    }
-  )
+    filename = 'series.plot.png',
+    content = function(file){
+      device <- function(..., width=width, height=height) {
+        grDevices::png(..., width = width, height = height,
+                       res = 300, units = "in")
+                }
+        ggsave(file, plot = plotInput(), device = device)
+        }
+    )
+  
+    
+    # filename = function() { paste(input$dataset, '.png', sep='') },
+    # content = function(file) {
+    #   ggsave(file, plot = "seriesPlot", device = "png")
+    #}
+  # )
+  
+  ###########################
+  ### Upload Data
+  
+  # return a list of UI elements
+  output$my_output_UI <- renderUI({
+    list(
+      h4(style = "color:blue;", "Add something missing from the database"),
+      selectInput(inputId = "myselect", label="", choices = selections)
+    )
+  })
+  # static
+  selections <- c("Brier Score", "CRPS", "CRPS Skill Score")
+  # update the selection list. Note the double assignment <<-
+  observeEvent(input$mybutton,{
+    selections <<- c(input$mytext, selections)
+    updateSelectInput(session, "myselect", choices = selections, selected = selections[1])
+  })
+  
+  
   
 }) # end shinyServer
 

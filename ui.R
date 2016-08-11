@@ -88,7 +88,7 @@ shinyUI(
                    conditionalPanel(
                      condition = "input.save == true",
                      # br(),
-                     downloadButton('downloadMainPlot')
+                     downloadButton('downloadMainPlot') #download series
                      )
                    ),
               hr()
@@ -116,7 +116,6 @@ shinyUI(
             ),
             hr()
           ),
-          
           # invalidateLater(2000, session),
           plotOutput("facetPlot")
           
@@ -131,32 +130,38 @@ shinyUI(
         
         tabPanel(
           "Compare Skill Scores",
-          # h4("Compare only skill scores"),
-          # p("Something to add here, controls buggy?")
+          h4("Renders comparative plot of scores for two Systems / Setups"),
           wellPanel(
             column(4,
-                   p("repeated from leftbar")
+                   p("first system selected from left, select 2nd for comparison"),
                    # uiOutput("System"),
-                   # uiOutput("Setup")
-                   # uiOutput("System"),
+                   p(paste("Setup selected: ", "SELECTED JS")), # uiOutput("Setup")
+                   uiOutput("System2"),
                    # uiOutput("Setup"),
-                   # uiOutput("ScoreTypes"), # mutiple = T
-                   # uiOutput("Locations")
+                   # uiOutput("ScoreTypes"), # multiple = T
+                   uiOutput("LocationsAll")
             ),
             column(4,
-                   p("some more static stuff")
+                   p("select another Setup to compare"),
                    # uiOutput("System")
-                   # uiOutput("Setup")
+                   uiOutput("Setup2")
             ),
           br()
           )
         ),
         
         # TODO define and test RDS, possibly CSV/TXT file uploads
+        ###########################
+        ### Upload Data
         tabPanel(
           "Upload",
-          h4("Add score data to the IMPREX database"),
-          p("")
+          h4("Add unrecognized score type to IMPREX database"),
+          p(""),
+          # h3("Using renderUI and uiOutput"),
+          uiOutput("my_output_UI"),
+          textInput("mytext", ""),
+          actionButton("mybutton", "Click to add to Selections")
+
         )
       )
     )
