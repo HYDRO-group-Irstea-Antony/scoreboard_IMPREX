@@ -67,11 +67,10 @@ skillScore <- function(data, measurevar = "scoreValue", groupvars=NULL, na.rm=FA
   
   datac <- plyr::ddply(data, groupvars, .drop=.drop,
                        .fun = function(xx, col, ref) {
-                         print(xx[[col]])
+                         # print(xx[[col]]) # debug
                          c(N    = length2(xx[[col]], na.rm=na.rm),
                            ss   = 1 - (xx[ref == "new", col] / xx[ref == "ref", col]),
                            mean = mean   (xx[[col]], na.rm=na.rm)
-                           # sd   = sd     (xx[[col]], na.rm=na.rm)
                          )
                        }, measurevar, data$ref
             )
