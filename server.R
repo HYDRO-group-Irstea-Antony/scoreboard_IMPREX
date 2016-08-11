@@ -21,6 +21,7 @@ db <- src_postgres(
   port = REport,
   user = REuser,
   password = REpassword
+  # encoding="utf8"
 )
 
 tbl.scores <- tbl(db, "tblScores")
@@ -96,13 +97,16 @@ shinyServer(function(input, output, session) {
   #   return(getit$locationID)
   # })
   
-  # observe({
-  #   tmpLocationName <- 
-  #     distinct(select(tbl.scores, locationID, caseStudy))
-  #   ctlLocationName <- collect(tmpLocationName)
-  #   ctlLocationName <-
-  #     arrange_(ctlLocationName, "caseStudy", "locationID")
-  # })
+  observe({
+    if(is.null(input$rtnCaseStudy))
+      return()
+    updateSelectInput(session, "Locations", choices = filter(ctlLocationName, caseStudy==input$rtnCaseStudy))
+    # tmpLocationName <-
+    #   distinct(select(tbl.scores, locationID, caseStudy))
+    # ctlLocationName <- collect(tmpLocationName)
+    # ctlLocationName <-
+    #   arrange_(ctlLocationName, "caseStudy", "locationID")
+  })
   
   # define Filters
   output$CaseStudy <- renderUI({
@@ -110,7 +114,8 @@ shinyServer(function(input, output, session) {
       return()
     CaseStudy <- setNames(ctlCaseStudy$ObjectInteger, ctlCaseStudy$ObjectItemName)
     # CaseStudy = paste(ctlCaseStudy$ObjectItemName, "\"=\"", ctlCaseStudy$ObjectInteger ) # not the way
-    selectInput("rtnCaseStudy", "Case Study:", choices = CaseStudy, multiple = F)
+    selectInput("rtnCaseStudy", 
+                paste("Case Study: (",length(unique(ctlCaseStudy$ObjectItemName)), ")"), choices = CaseStudy, multiple = F)
   })
 
   output$System <- renderUI({
