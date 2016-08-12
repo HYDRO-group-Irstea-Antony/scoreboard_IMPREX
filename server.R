@@ -96,6 +96,7 @@ shinyServer(function(input, output, session) {
       is.null(x)
     )) 
       return("System:")
+    # select ctlSystem$ObjectItemName, 
     System <- ctlSystem$ObjectItemName
     selectInput("rtnForecastSystem", "System:", choices = System, multiple = F, selected = "E-HYPE")
 
