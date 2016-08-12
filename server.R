@@ -211,17 +211,17 @@ shinyServer(function(input, output, session) {
        !is.null(input$rtnSystemToCompare) &
        !is.null(input$rtnSetupToCompare) ){
       print("entering SQL query")
-      XsGetAllLocations <- paste0("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnForecastSystem, "' and \"forecastType\" = '", input$rtnForecastType , 
+      sGetAllLocations <- paste0("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnForecastSystem, "' and \"forecastType\" = '", input$rtnForecastType , 
                                 "' and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnSystemToCompare, "' and \"forecastType\" = '", input$rtnSetupToCompare ,"');")
       
       # sGetAllLocsClean("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '?rs1' and \"forecastType\" = '?su1'" ,
       #                  " and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '?rs2' and \"forecastType\" = '?su2');")
       # browser()
       
-      sGetAllLocations <- paste("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'E-HYPE' and \"forecastType\" = 'Bias Correction 1' ",
-                                "and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'EFAS SYS4' and \"forecastType\" = 'Bias Correction 2');")
+      # sGetAllLocations <- paste("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'E-HYPE' and \"forecastType\" = 'Bias Correction 1' ",
+      #                           "and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'EFAS SYS4' and \"forecastType\" = 'Bias Correction 2');")
       print(paste("query: ", sGetAllLocations))
-      rs <- dbSendQuery(db$con, sGetAllLocations)
+      rs <- dbSendQuery(db$con, sGetAllLocations) # use existing conn, seems to work w difft API
       
       # cleanres <- sqlInterpolate(db$con, 
       #                            sGetAllLocsClean,
@@ -230,10 +230,11 @@ shinyServer(function(input, output, session) {
       #                            rs2 = input$rtnSystemToCompare,
       #                            su2 = input$rtnSetupToCompare)
       
-      dbFetch(rs)
-      # browser()
+      df <- dbFetch(rs)
+      browser()
       dbClearResult(rs)
-      return(rs)
+      return(df)
+      
     }
     })
   # dbDisconnect(conn)
@@ -250,10 +251,11 @@ shinyServer(function(input, output, session) {
     # else {
     
   if(!is.null(get.overlapping.locs())){
-    print(get.overlapping.locs())
+    print(paste("get.overlapping.locs: ", as.vector(get.overlapping.locs())))
   }
     
-    Locations <- c("9563711", "9509300", "9000963", "9565063") # get.overlapping.locs()
+    # Locations <- as.vector(get.overlapping.locs)
+    Locations <- c("9563711", "9509300", "9000963", "9565063") #TODO 
     
     # }
     selectInput("rtnLocationsMeetingCrit","Location(s): ", choices = structure(Locations), multiple=T)
@@ -359,6 +361,7 @@ shinyServer(function(input, output, session) {
       plot(1, 1, col = "white")
       text(1, 1, "The database doesn't have information on this combination of variables (yet)")
     } else {
+      p("we'll have a plot here in a bit...")
       # loc.count <- length(loc.sum$locationID)
       # plotInput <- 
       # ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
