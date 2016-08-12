@@ -361,22 +361,22 @@ shinyServer(function(input, output, session) {
     } else {
       # loc.count <- length(loc.sum$locationID)
       # plotInput <- 
-      ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
-        geom_line(size = 1) +
-        geom_point(aes(color = locationID)) +
-        facet_grid(scoreType ~ locationID, scales = "free_y") + #margin = TRUE
-        geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
-        xlab(paste("Lead Times (",loc.sum$datePartUnit,")", sep="")) + 
-        ylab("Scores") +
-        theme_bw() + 
-        theme(panel.grid.major = element_line(colour = NA)) +
-        theme(axis.text = element_text(size=14, vjust=0.5)) +
-        theme(legend.text = element_text(size=14, vjust=0.5)) +
-        theme(title = element_text(size = 14)) + 
-        scale_x_discrete(limits = loc.sum$leadtimeValue) + 
-        theme(panel.margin.x = unit(2 / (length(unique(loc.sum$locationID)) - 1), "lines")) +
-        theme(panel.margin.y = unit(2 / (length(unique(loc.sum$scoreType)) - 1), "lines")) +
-        theme(strip.text = element_text(size=14, vjust=0.5))    
+      # ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
+      #   geom_line(size = 1) +
+      #   geom_point(aes(color = locationID)) +
+      #   facet_grid(scoreType ~ locationID, scales = "free_y") + #margin = TRUE
+      #   geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
+      #   xlab(paste("Lead Times (",loc.sum$datePartUnit,")", sep="")) + 
+      #   ylab("Scores") +
+      #   theme_bw() + 
+      #   theme(panel.grid.major = element_line(colour = NA)) +
+      #   theme(axis.text = element_text(size=14, vjust=0.5)) +
+      #   theme(legend.text = element_text(size=14, vjust=0.5)) +
+      #   theme(title = element_text(size = 14)) + 
+      #   scale_x_discrete(limits = loc.sum$leadtimeValue) + 
+      #   theme(panel.margin.x = unit(2 / (length(unique(loc.sum$locationID)) - 1), "lines")) +
+      #   theme(panel.margin.y = unit(2 / (length(unique(loc.sum$scoreType)) - 1), "lines")) +
+      #   theme(strip.text = element_text(size=14, vjust=0.5))    
     }
     
   })
