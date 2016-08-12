@@ -132,20 +132,25 @@ shinyUI(
           "Compare Skill Scores",
           h4("Renders comparative plot of scores for two Systems / Setups"),
           wellPanel(
+            p("First select a reference system from left, select 2nd for comparison"),
             column(4,
-                   p("first system selected from left, select 2nd for comparison"),
-                   # uiOutput("System"),
-                   p(paste("Setup selected: ", "SELECTED JS")), # uiOutput("Setup")
+                   h4("Reference System:"),
+                   uiOutput("ReferenceSystem"),
+                   p("select another System to compare"),
                    uiOutput("System2"),
-                   # uiOutput("Setup"),
                    # uiOutput("ScoreTypes"), # multiple = T
                    uiOutput("LocationsAll")
             ),
             column(4,
+                   h4("Reference Setup:"),
+                   uiOutput("ReferenceSetup"),
+                   
                    p("select another Setup to compare"),
                    # uiOutput("System")
                    uiOutput("Setup2")
             ),
+            p("The plot below will refresh as you update reference values at left and / or comparison values above"),
+            
           br()
           )
         ),

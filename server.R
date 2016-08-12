@@ -35,6 +35,8 @@ tmpCaseStudy <-
     filter(tbl.interface,
          ObjectName == "Case Study" & LanguageID == RElanguage)
 ctlCaseStudy <- collect(tmpCaseStudy)
+#ctlCaseStudy <- ctlCaseStudy[,c(4,2)] #ID, CaseStudy
+#names(ctlCaseStudy) <- c("CaseStudyID", "CaseStudy")
 
 tmpSystem <-
   filter(tbl.interface,
@@ -91,7 +93,7 @@ shinyServer(function(input, output, session) {
 
   output$System <- renderUI({
     x <- input$rtnCaseStudy
-    browser()
+    # browser()
     if (any(
       is.null(x)
     )) 
@@ -129,21 +131,7 @@ shinyServer(function(input, output, session) {
     selectInput("rtnLocid","Location(s): ", choices = structure(Locations), multiple=T)
   })
   
-  output$LocationsAll <- renderUI({
-    if (is.null(ctlLocationName))
-      return()
-    # if(!is.null(output$CaseStudy))
-    # {
-    #   Location <- filter(ctlLocationName, caseStudy == output$CaseStudy)
-    #   Location <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
-    # }
-    # else {
-    Locations <- c("All", ctlLocationName$locationID)
-    # }
-    selectInput("rtnLocid","Location(s): ", choices = structure(Locations), multiple=T)
-  })
-
-# setup ex Bias Corr 1 (was forecastType)
+# (Forecast) Setup ex Bias Corr 1 (formerly forecastType)
   output$Setup <- renderUI({
     if(!is.null(ctlSetup)) {
       # Setup <- setNames(ctlSetup$ID, ctlSetup$forecastSetup) # ID, value
@@ -154,15 +142,6 @@ shinyServer(function(input, output, session) {
     }
   })
 
-  output$Setup2 <- renderUI({
-    if(!is.null(ctlSetup)) {
-      Setup <- c(ctlSetup$forecastSetup)
-      selectInput("rtnForecastType","Forecast Setup: ", 
-                  choices = structure(Setup), 
-                  multiple=F)
-    }
-  })
-  
     output$ScoreTypes <- renderUI({
     if(!is.null(ctlScoreType)) {
       # ScoreType <- structure(ctlScoreType)
@@ -190,6 +169,42 @@ shinyServer(function(input, output, session) {
     ModelVariable <- ctlModelVariable$modelVariable
     selectInput("rtnModelVariable","Variable: ", choices = structure(ModelVariable), multiple=F)
   })
+  
+  
+  ########################" TAB 3 Compare Skill Scores
+  output$ReferenceSystem <- renderUI({
+    paste("Ref: ", input$System)    #"ReferenceSystem"
+
+  })
+  
+  output$Setup2 <- renderUI({
+    if(!is.null(ctlSetup)) {
+      Setup <- c(ctlSetup$forecastSetup)
+      selectInput("rtnForecastType","Forecast Setup: ", 
+                  choices = structure(Setup), 
+                  multiple=F)
+    }
+  })
+  
+  output$LocationsAll <- renderUI({
+    if (is.null(ctlLocationName))
+      return()
+    # if(!is.null(output$CaseStudy))
+    # {
+    #   Location <- filter(ctlLocationName, caseStudy == output$CaseStudy)
+    #   Location <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
+    # }
+    # else {
+    Locations <- c("All", ctlLocationName$locationID)
+    
+    sGetAllLocations <- "select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'E-HYPE' and \"forecastType\" = 'Bias Correction 1' and \"locationID\" in (
+      select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'EFAS SYS4' and \"forecastType\" = 'Bias Correction 2')"
+    # }
+    selectInput("rtnLocid","Location(s): ", choices = structure(Locations), multiple=T)
+  })
+  
+  
+  
   
   filtInput <- reactive({
     validate(
