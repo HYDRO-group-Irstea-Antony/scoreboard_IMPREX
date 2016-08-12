@@ -13,6 +13,7 @@ library(dplyr)
 library(RPostgreSQL)
 library(lazyeval)
 library(ggplot2)
+library(DBI)
 
 db <- src_postgres(
   dbname = REdbname,
@@ -84,12 +85,13 @@ shinyUI(
                    uiOutput("ScoreTypeSingle")
                    ),
             column(3,
-                   checkboxInput('save', 'Save Plot?', FALSE),
-                   conditionalPanel(
-                     condition = "input.save == true",
-                     # br(),
-                     downloadButton('downloadMainPlot') #download series
-                     )
+                   p("note")
+                   # checkboxInput('save', 'Save Plot?', FALSE),
+                   # conditionalPanel(
+                   #   condition = "input.save == true",
+                   #   # br(),
+                   #   downloadButton('downloadMainPlot') #download series
+                   #   )
                    ),
               hr()
             ),
@@ -107,12 +109,13 @@ shinyUI(
 
             ),
             column(2,
-              checkboxInput('savePP', 'Save Plots?', FALSE),
-              conditionalPanel(
-                condition = "input.savePP == true",
-                textInput("pngname", "Filename", "my.png"),
-                downloadButton("downloadPanelPlot", "Download File")
-              )
+                   p("note")
+              # checkboxInput('savePP', 'Save Plots?', FALSE),
+              # conditionalPanel(
+              #   condition = "input.savePP == true",
+              #   textInput("pngname", "Filename", "my.png"),
+              #   downloadButton("downloadPanelPlot", "Download File")
+              # )
             ),
             hr()
           ),
@@ -130,30 +133,47 @@ shinyUI(
         
         tabPanel(
           "Compare Skill Scores",
-          h4("Renders comparative plot of scores for two Systems / Setups"),
+          # h2("Renders comparative plot of scores for two Systems / Setups"),
           wellPanel(
-            p("First select a reference system from left, select 2nd for comparison"),
-            column(4,
-                   h4("Reference System:"),
-                   uiOutput("ReferenceSystem"),
-                   p("select another System to compare"),
-                   uiOutput("System2"),
-                   # uiOutput("ScoreTypes"), # multiple = T
-                   uiOutput("LocationsAll")
+            h4("note: Basline or \"Reference\" selections may be changed in the menu on the left"),
+            column(2,
+                   p("baseline")
             ),
-            column(4,
-                   h4("Reference Setup:"),
-                   uiOutput("ReferenceSetup"),
-                   
-                   p("select another Setup to compare"),
-                   # uiOutput("System")
-                   uiOutput("Setup2")
-            ),
-            p("The plot below will refresh as you update reference values at left and / or comparison values above"),
             
-          br()
-          )
-        ),
+            column(4,
+                   p(strong("Reference System:")),
+                   strong(uiOutput("ReferenceSystem"))
+                   # p("select another System to compare"),
+            ),
+            column(4,
+                   p(strong("Reference Forecast Setup:")),
+                   strong(uiOutput("ReferenceSetup"))
+                   ),
+            br()
+               ),
+            wellPanel(
+              column(2,
+                     p("comparison")
+                     ),
+              column(4,
+                     # p("select another Setup to compare"),
+                     uiOutput("SystemToCompare"),
+                     # uiOutput("ScoreTypes"), # multiple = T #using control 2* causes loops???
+                     uiOutput("LocationsAll")
+                     ),
+              column(3,
+                     # uiOutput("System")
+                     uiOutput("SetupToCompare")
+                     ),
+              br()
+              
+               ),
+            # p("The plot below will refresh as you update reference values at left and / or comparison values above"),
+          
+            br(),
+          plotOutput("compareSkillScorePlot")
+          
+          ), # end tabPanel
         
         # TODO define and test RDS, possibly CSV/TXT file uploads
         ###########################
@@ -166,10 +186,10 @@ shinyUI(
           uiOutput("my_output_UI"),
           textInput("mytext", ""),
           actionButton("mybutton", "Click to add to Selections")
-
-        )
+        ) 
+        
+        ) # end tabSet
       )
     )
     )
-)
 )

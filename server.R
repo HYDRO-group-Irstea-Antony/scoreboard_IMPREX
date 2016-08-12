@@ -13,7 +13,9 @@ library(dplyr)
 library(RPostgreSQL)
 library(lazyeval)
 library(ggplot2)
+library(DBI)
 # library(DT)
+
 
 db <- src_postgres(
   dbname = REdbname,
@@ -21,8 +23,9 @@ db <- src_postgres(
   port = REport,
   user = REuser,
   password = REpassword
-  # encoding="utf8"
 )
+
+
 
 tbl.scores <- tbl(db, "tblScores")
 tbl.interface <- tbl(db, "tblInterface")
@@ -88,7 +91,8 @@ shinyServer(function(input, output, session) {
       return()
     CaseStudy <- setNames(ctlCaseStudy$ObjectInteger, iconv(ctlCaseStudy$ObjectItemName, "UTF-8")) # to get the Swedish / spanish chars
     selectInput("rtnCaseStudy", 
-                paste("Case Study: (",length(unique(ctlCaseStudy$ObjectItemName)), ")"), choices = CaseStudy, multiple = F)
+                paste("Case Study: (",length(unique(ctlCaseStudy$ObjectItemName)), ")"), 
+                choices = CaseStudy, multiple = F)
   })
 
   output$System <- renderUI({
@@ -99,21 +103,15 @@ shinyServer(function(input, output, session) {
     )) 
       return("System:")
     # select ctlSystem$ObjectItemName, 
+    # System <- setNames(ctlSystem$ObjectInteger, ctlSystem$ObjectItemName) # this gets complicated
     System <- ctlSystem$ObjectItemName
-    selectInput("rtnForecastSystem", "System:", choices = System, multiple = F, selected = "E-HYPE")
+    selectInput("rtnForecastSystem", "System:", choices = System, multiple = F, selected = 2) # "E-HYPE" 
+    # ? 'selected' must be the values instead of names of 'choices' for the input 'rtnForecastSystem'
 
     # if(is.null(ctlSystem))
     #   return()
     # System <- ctlSystem$ObjectItemName
     # selectInput("rtnForecastSystem", "System:", choices = System, multiple = F, selected = "E-HYPE")
-  })
-  
-  #used in Comp Skill Score only
-  output$System2 <- renderUI({
-    if(is.null(ctlSystem))
-      return()
-    System <- ctlSystem$ObjectItemName
-    selectInput("rtnForecastSystem", "System:", choices = System, multiple = F, selected = "E-HYPE")
   })
   
     # note - set choices=character(0) to reset selections 
@@ -172,20 +170,75 @@ shinyServer(function(input, output, session) {
   
   
   ########################" TAB 3 Compare Skill Scores
+  
+  
   output$ReferenceSystem <- renderUI({
-    paste("Ref: ", input$System)    #"ReferenceSystem"
-
+    paste(" ", input$rtnForecastSystem)    #"ReferenceSystem"
   })
   
-  output$Setup2 <- renderUI({
+  output$ReferenceSetup <- renderUI({
+    paste(" ", input$rtnForecastType)    #"ReferenceSystem"
+  })
+  
+  output$SystemToCompare <- renderUI({
+    if(is.null(ctlSystem))
+      return()
+    System <- ctlSystem$ObjectItemName
+    selectInput("rtnSystemToCompare", "System:", choices = System, multiple = F) #selected = none?
+  })
+  
+  output$SetupToCompare <- renderUI({
     if(!is.null(ctlSetup)) {
       Setup <- c(ctlSetup$forecastSetup)
-      selectInput("rtnForecastType","Forecast Setup: ", 
+      selectInput("rtnSetupToCompare","Forecast Setup: ", 
                   choices = structure(Setup), 
                   multiple=F)
     }
   })
+
+  #if goes inside reactive - gets called each reaction; also frees connex. Which is best?
+  # conn <- dbConnect(
+  #   drv <- dbDriver("PostgreSQL"),
+  #   dbname = REdbname,
+  #   host = REhost,
+  #   username = REuser,
+  #   password = REpassword)
   
+  get.overlapping.locs <- reactive({
+    
+    if(!is.null(input$rtnForecastSystem) & #not right?
+       !is.null(input$rtnForecastType) &
+       !is.null(input$rtnSystemToCompare) &
+       !is.null(input$rtnSetupToCompare) ){
+      print("entering SQL query")
+      XsGetAllLocations <- paste0("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnForecastSystem, "' and \"forecastType\" = '", input$rtnForecastType , 
+                                "' and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnSystemToCompare, "' and \"forecastType\" = '", input$rtnSetupToCompare ,"');")
+      
+      # sGetAllLocsClean("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '?rs1' and \"forecastType\" = '?su1'" ,
+      #                  " and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '?rs2' and \"forecastType\" = '?su2');")
+      # browser()
+      
+      sGetAllLocations <- paste("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'E-HYPE' and \"forecastType\" = 'Bias Correction 1' ",
+                                "and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'EFAS SYS4' and \"forecastType\" = 'Bias Correction 2');")
+      print(paste("query: ", sGetAllLocations))
+      rs <- dbSendQuery(db$con, sGetAllLocations)
+      
+      # cleanres <- sqlInterpolate(db$con, 
+      #                            sGetAllLocsClean,
+      #                            rs1 = input$rtnForecastSystem,
+      #                            su1 = input$rtnForecastType,
+      #                            rs2 = input$rtnSystemToCompare,
+      #                            su2 = input$rtnSetupToCompare)
+      
+      dbFetch(rs)
+      # browser()
+      dbClearResult(rs)
+      return(rs)
+    }
+    })
+  # dbDisconnect(conn)
+  
+    
   output$LocationsAll <- renderUI({
     if (is.null(ctlLocationName))
       return()
@@ -195,12 +248,15 @@ shinyServer(function(input, output, session) {
     #   Location <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
     # }
     # else {
-    Locations <- c("All", ctlLocationName$locationID)
     
-    sGetAllLocations <- "select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'E-HYPE' and \"forecastType\" = 'Bias Correction 1' and \"locationID\" in (
-      select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'EFAS SYS4' and \"forecastType\" = 'Bias Correction 2')"
+  if(!is.null(get.overlapping.locs())){
+    print(get.overlapping.locs())
+  }
+    
+    Locations <- c("9563711", "9509300", "9000963", "9565063") # get.overlapping.locs()
+    
     # }
-    selectInput("rtnLocid","Location(s): ", choices = structure(Locations), multiple=T)
+    selectInput("rtnLocationsMeetingCrit","Location(s): ", choices = structure(Locations), multiple=T)
   })
   
   
@@ -293,6 +349,39 @@ shinyServer(function(input, output, session) {
       )
     summary(dataset)
   })
+  
+  output$compareSkillScorePlot <- renderPlot({
+    validate(
+      need(!is.null(input$rtnLocationsMeetingCrit), "Select one or more data elements from the Filter to begin")
+      # need(!is.null()) , score selection box...
+    )
+    if (nrow(filtSkillScores()) == 0) {
+      plot(1, 1, col = "white")
+      text(1, 1, "The database doesn't have information on this combination of variables (yet)")
+    } else {
+      # loc.count <- length(loc.sum$locationID)
+      # plotInput <- 
+      ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
+        geom_line(size = 1) +
+        geom_point(aes(color = locationID)) +
+        facet_grid(scoreType ~ locationID, scales = "free_y") + #margin = TRUE
+        geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
+        xlab(paste("Lead Times (",loc.sum$datePartUnit,")", sep="")) + 
+        ylab("Scores") +
+        theme_bw() + 
+        theme(panel.grid.major = element_line(colour = NA)) +
+        theme(axis.text = element_text(size=14, vjust=0.5)) +
+        theme(legend.text = element_text(size=14, vjust=0.5)) +
+        theme(title = element_text(size = 14)) + 
+        scale_x_discrete(limits = loc.sum$leadtimeValue) + 
+        theme(panel.margin.x = unit(2 / (length(unique(loc.sum$locationID)) - 1), "lines")) +
+        theme(panel.margin.y = unit(2 / (length(unique(loc.sum$scoreType)) - 1), "lines")) +
+        theme(strip.text = element_text(size=14, vjust=0.5))    
+    }
+    
+  })
+  
+  
   
   output$seriesPlot <- renderPlot({
     validate(
