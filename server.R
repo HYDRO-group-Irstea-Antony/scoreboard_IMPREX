@@ -26,7 +26,6 @@ db <- src_postgres(
 )
 
 
-
 tbl.scores <- tbl(db, "tblScores")
 tbl.interface <- tbl(db, "tblInterface")
 tbl.forecastsetup <- tbl(db, "tblForecastSetup")
@@ -91,27 +90,29 @@ shinyServer(function(input, output, session) {
       return()
     CaseStudy <- setNames(ctlCaseStudy$ObjectInteger, iconv(ctlCaseStudy$ObjectItemName, "UTF-8")) # to get the Swedish / spanish chars
     selectInput("rtnCaseStudy", 
-                paste("Case Study: (",length(unique(ctlCaseStudy$ObjectItemName)), ")"), 
+                paste("Case Study:"),  # (",length(unique(ctlCaseStudy$ObjectItemName)), ")
                 choices = CaseStudy, multiple = F)
   })
 
   output$System <- renderUI({
     x <- input$rtnCaseStudy
-    # browser()
+    
+    browser()
     if (any(
       is.null(x)
     )) 
-      return("System:")
+      return()
+      # return("System:")
     # select ctlSystem$ObjectItemName, 
     # System <- setNames(ctlSystem$ObjectInteger, ctlSystem$ObjectItemName) # this gets complicated
-    System <- ctlSystem$ObjectItemName
-    selectInput("rtnForecastSystem", "System:", choices = System, multiple = F, selected = 2) # "E-HYPE" 
+    
+#    System <- ctlSystem$ObjectItemName
+    #input of case study should be integer
+    System <- select(tbl.scores, c(caseStudy, forecastSystem) )
+    System <- filter(System, caseStudy==x)
+    System <- unique(collect(System, n=Inf))
+    selectInput("rtnForecastSystem", "System:", choices = System$forecastSystem, multiple = F, selected = 2) # "E-HYPE" 
     # ? 'selected' must be the values instead of names of 'choices' for the input 'rtnForecastSystem'
-
-    # if(is.null(ctlSystem))
-    #   return()
-    # System <- ctlSystem$ObjectItemName
-    # selectInput("rtnForecastSystem", "System:", choices = System, multiple = F, selected = "E-HYPE")
   })
   
     # note - set choices=character(0) to reset selections 
@@ -171,7 +172,6 @@ shinyServer(function(input, output, session) {
   
   ########################" TAB 3 Compare Skill Scores
   
-  
   output$ReferenceSystem <- renderUI({
     paste(" ", input$rtnForecastSystem)    #"ReferenceSystem"
   })
@@ -196,31 +196,21 @@ shinyServer(function(input, output, session) {
     }
   })
 
-  #if goes inside reactive - gets called each reaction; also frees connex. Which is best?
-  # conn <- dbConnect(
-  #   drv <- dbDriver("PostgreSQL"),
-  #   dbname = REdbname,
-  #   host = REhost,
-  #   username = REuser,
-  #   password = REpassword)
-  
+
   get.overlapping.locs <- reactive({
     
     if(!is.null(input$rtnForecastSystem) & #not right?
        !is.null(input$rtnForecastType) &
        !is.null(input$rtnSystemToCompare) &
        !is.null(input$rtnSetupToCompare) ){
-      print("entering SQL query")
+      # print("entering SQL query")
       sGetAllLocations <- paste0("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnForecastSystem, "' and \"forecastType\" = '", input$rtnForecastType , 
                                 "' and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnSystemToCompare, "' and \"forecastType\" = '", input$rtnSetupToCompare ,"');")
       
-      # sGetAllLocsClean("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '?rs1' and \"forecastType\" = '?su1'" ,
-      #                  " and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '?rs2' and \"forecastType\" = '?su2');")
-      # browser()
-      
+      # cleaner, faster param query
       # sGetAllLocations <- paste("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'E-HYPE' and \"forecastType\" = 'Bias Correction 1' ",
       #                           "and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'EFAS SYS4' and \"forecastType\" = 'Bias Correction 2');")
-      print(paste("query: ", sGetAllLocations))
+      # print(paste("query: ", sGetAllLocations))
       rs <- dbSendQuery(db$con, sGetAllLocations) # use existing conn, seems to work w difft API
       
       # cleanres <- sqlInterpolate(db$con, 
@@ -231,14 +221,20 @@ shinyServer(function(input, output, session) {
       #                            su2 = input$rtnSetupToCompare)
       
       df <- dbFetch(rs)
-      browser()
+      # browser()
       dbClearResult(rs)
       return(df)
-      
     }
     })
-  # dbDisconnect(conn)
   
+  #TODO update forecastSetup after System is selected
+  # setup was forecastType
+  
+  # get.setup.by.system(
+  #   
+  # )
+  
+
     
   output$LocationsAll <- renderUI({
     if (is.null(ctlLocationName))
@@ -249,21 +245,29 @@ shinyServer(function(input, output, session) {
     #   Location <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
     # }
     # else {
+  browser()   
+  
+    if(!is.null(get.overlapping.locs())){
+      print(paste("get.overlapping.locs not null: ", as.vector(get.overlapping.locs())))
+    }
+    if(length(get.overlapping.locs())>0){
+      print(paste("get.overlapping.locs len>0: ", as.vector(get.overlapping.locs())))
+    }
     
-  if(!is.null(get.overlapping.locs())){
-    print(paste("get.overlapping.locs: ", as.vector(get.overlapping.locs())))
-  }
-    
-    # Locations <- as.vector(get.overlapping.locs)
-    Locations <- c("9563711", "9509300", "9000963", "9565063") #TODO 
+    if(!is.null(get.overlapping.locs())){
+      Locations <- as.vector(get.overlapping.locs())
+    }
+    else {
+      return()
+      # Locations <- c("No Locations in selection") 
+    }
     
     # }
     selectInput("rtnLocationsMeetingCrit","Location(s): ", choices = structure(Locations), multiple=T)
   })
   
-  
-  
-  
+
+  #for first plot  
   filtInput <- reactive({
     validate(
       need(input$rtnLocid != "", "Please select at least one location")
@@ -291,6 +295,7 @@ shinyServer(function(input, output, session) {
   filtSkillScores <- reactive({
     validate(
       need(input$rtnLocid != "", "Please select at least one location and one or more scores (below)")
+      # need(input$)
     )
     list.skill.scores <- input$rtnAllScoreTypes
 
@@ -302,6 +307,7 @@ shinyServer(function(input, output, session) {
       remote <- filter(tbl.scores,
                        locationID %in% input$rtnLocid)
     }
+    
     remote <- filter(remote,
                      caseStudy == input$rtnCaseStudy &
                        forecastSystem == input$rtnForecastSystem  &
@@ -313,18 +319,22 @@ shinyServer(function(input, output, session) {
     getit <- structure(collect(remote)) 
   }) #end reactive
 
+############ this builds the dataset needed for compareSkillScorePlot
+##
   compareSkillScores <- reactive({
     validate(
-      need(input$rtnLocid != "", "Please select at least one location and one or more Forecast Setups to plot")
+      need(input$LocationsAll != "", "Please select at least one location and one or more Forecast Setups to plot")
     )
     
-    if (length(input$rtnLocid) == 1) {
+    #what goes in
+    #Location
+    if (length(input$rtnLocationsMeetingCrit) == 1) {
       remote <- filter(tbl.scores,
-                       locationID == input$rtnLocid)
+                       locationID == input$rtnLocationsMeetingCrit)
     }
-    else if (length(input$rtnLocid) > 1) {
+    else if (length(input$rtnLocationsMeetingCrit) > 1) {
       remote <- filter(tbl.scores,
-                       locationID %in% input$rtnLocid)
+                       locationID %in% input$rtnLocationsMeetingCrit)
     }
 
     if (length(input$scoreType) == 1) {
@@ -357,6 +367,9 @@ shinyServer(function(input, output, session) {
       need(!is.null(input$rtnLocationsMeetingCrit), "Select one or more data elements from the Filter to begin")
       # need(!is.null()) , score selection box...
     )
+    
+    d <- skillScore()
+    
     if (nrow(filtSkillScores()) == 0) {
       plot(1, 1, col = "white")
       text(1, 1, "The database doesn't have information on this combination of variables (yet)")
