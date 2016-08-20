@@ -96,8 +96,7 @@ shinyServer(function(input, output, session) {
 
   output$System <- renderUI({
     x <- input$rtnCaseStudy
-    
-    browser()
+    # browser()
     if (any(
       is.null(x)
     )) 
@@ -115,6 +114,42 @@ shinyServer(function(input, output, session) {
     # ? 'selected' must be the values instead of names of 'choices' for the input 'rtnForecastSystem'
   })
   
+  
+  # (Forecast) Setup ex Bias Corr 1 (formerly forecastType)
+  output$Setup <- renderUI({
+    x <- input$rtnForecastSystem
+    y <- input$rtnCaseStudy
+    if (any(
+      is.null(x),
+      is.null(y)
+    )) 
+      return() # hits this each time there's a null in first two selections TAKE CARE for endless loop
+
+    # browser()
+    
+    Setup <- select(tbl.scores, c(caseStudy, forecastSystem, forecastSetup, forecastType))
+    Setup <- filter(Setup, forecastSystem==x & caseStudy==y)
+    Setup <- unique(collect(Setup, n=Inf))
+    print(paste("Setup$forecastSetup is: ", Setup$forecastSetup))
+    Setup <- Setup[Setup$forecastSetup == Setup$forecastSetup]
+    
+    # Setup <- filter(tbl.forecastsetup, ID==Setup$forecastSetup)
+    
+    selectInput("rtnForecastType","Forecast Setup: ", 
+                choices = structure(Setup$forecastType), 
+                multiple=F)
+    
+    
+    # if(!is.null(ctlSetup)) {
+    #   # Setup <- setNames(ctlSetup$ID, ctlSetup$forecastSetup) # ID, value
+    #   Setup <- c(ctlSetup$forecastSetup) #value only
+    #   selectInput("rtnForecastType","Forecast Setup: ", 
+    #               choices = structure(Setup), 
+    #               multiple=F)
+    # }
+  })
+  
+  
     # note - set choices=character(0) to reset selections 
   output$Locations <- renderUI({
     if (is.null(ctlLocationName))
@@ -128,17 +163,6 @@ shinyServer(function(input, output, session) {
       Locations <- ctlLocationName$locationID
     # }
     selectInput("rtnLocid","Location(s): ", choices = structure(Locations), multiple=T)
-  })
-  
-# (Forecast) Setup ex Bias Corr 1 (formerly forecastType)
-  output$Setup <- renderUI({
-    if(!is.null(ctlSetup)) {
-      # Setup <- setNames(ctlSetup$ID, ctlSetup$forecastSetup) # ID, value
-      Setup <- c(ctlSetup$forecastSetup) #value only
-      selectInput("rtnForecastType","Forecast Setup: ", 
-                  choices = structure(Setup), 
-                  multiple=F)
-    }
   })
 
     output$ScoreTypes <- renderUI({
@@ -245,7 +269,7 @@ shinyServer(function(input, output, session) {
     #   Location <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
     # }
     # else {
-  browser()   
+  # browser()   
   
     if(!is.null(get.overlapping.locs())){
       print(paste("get.overlapping.locs not null: ", as.vector(get.overlapping.locs())))
