@@ -29,9 +29,8 @@ db <- src_postgres(
 tbl.scores <- tbl(db, "tblScores")
 tbl.interface <- tbl(db, "tblInterface")
 tbl.forecastsetup <- tbl(db, "tblForecastSetup")
-# totes <- cbind(tbl.scores$forecastSetup, tbl.forecastsetup)
+# test <- cbind(tbl.scores$forecastSetup, tbl.forecastsetup)
 
-# enc2utf8
 # defined within the interface table
 tmpCaseStudy <-
     filter(tbl.interface,
@@ -101,11 +100,6 @@ shinyServer(function(input, output, session) {
       is.null(x)
     )) 
       return()
-      # return("System:")
-    # select ctlSystem$ObjectItemName, 
-    # System <- setNames(ctlSystem$ObjectInteger, ctlSystem$ObjectItemName) # this gets complicated
-    
-#    System <- ctlSystem$ObjectItemName
     #input of case study should be integer
     System <- select(tbl.scores, c(caseStudy, forecastSystem) )
     System <- filter(System, caseStudy==x)
@@ -138,15 +132,7 @@ shinyServer(function(input, output, session) {
     selectInput("rtnForecastType","Forecast Setup: ", 
                 choices = structure(Setup$forecastType), 
                 multiple=F)
-    
-    
-    # if(!is.null(ctlSetup)) {
-    #   # Setup <- setNames(ctlSetup$ID, ctlSetup$forecastSetup) # ID, value
-    #   Setup <- c(ctlSetup$forecastSetup) #value only
-    #   selectInput("rtnForecastType","Forecast Setup: ", 
-    #               choices = structure(Setup), 
-    #               multiple=F)
-    # }
+
   })
   
   
@@ -160,6 +146,7 @@ shinyServer(function(input, output, session) {
     #   Location <- ctlLocationName$locationID 
     # }
     # else {
+      #todo -- update with locations available on above-selected parameters
       Locations <- ctlLocationName$locationID
     # }
     selectInput("rtnLocid","Location(s): ", choices = structure(Locations), multiple=T)
@@ -197,11 +184,11 @@ shinyServer(function(input, output, session) {
   ########################" TAB 3 Compare Skill Scores
   
   output$ReferenceSystem <- renderUI({
-    paste(" ", input$rtnForecastSystem)    #"ReferenceSystem"
+    paste("    ", input$rtnForecastSystem)    #"ReferenceSystem", System
   })
   
   output$ReferenceSetup <- renderUI({
-    paste(" ", input$rtnForecastType)    #"ReferenceSystem"
+    paste("    ", input$rtnForecastType)    #"ReferenceSystem", Setup
   })
   
   output$SystemToCompare <- renderUI({
@@ -211,13 +198,27 @@ shinyServer(function(input, output, session) {
     selectInput("rtnSystemToCompare", "System:", choices = System, multiple = F) #selected = none?
   })
   
+# todo pull choices like output$Setup, above
   output$SetupToCompare <- renderUI({
-    if(!is.null(ctlSetup)) {
-      Setup <- c(ctlSetup$forecastSetup)
-      selectInput("rtnSetupToCompare","Forecast Setup: ", 
-                  choices = structure(Setup), 
-                  multiple=F)
-    }
+    z <- input$rtnSystemToCompare
+    if (any(
+      is.null(z)
+    )) 
+      return()
+    
+    # browser()
+    
+    SetupCompare <- select(tbl.scores, c(caseStudy, forecastSystem, forecastSetup, forecastType))
+    SetupCompare <- filter(SetupCompare, forecastSystem==z) #  & caseStudy==y
+    SetupCompare <- unique(collect(SetupCompare, n=Inf))
+    print(paste("SetupCompare$forecastSetup is: ", SetupCompare$forecastSetup))
+    SetupCompare <- SetupCompare[SetupCompare$forecastSetup == SetupCompare$forecastSetup]
+    
+    # Setup <- filter(tbl.forecastsetup, ID==Setup$forecastSetup)
+    
+    selectInput("rtnSetupToCompare","Forecast Setup: ", 
+                choices = structure(SetupCompare$forecastType), 
+                multiple=F)
   })
 
 
@@ -263,13 +264,7 @@ shinyServer(function(input, output, session) {
   output$LocationsAll <- renderUI({
     if (is.null(ctlLocationName))
       return()
-    # if(!is.null(output$CaseStudy))
-    # {
-    #   Location <- filter(ctlLocationName, caseStudy == output$CaseStudy)
-    #   Location <- ctlLocationName$locationID # hiding dataPackageGUID, can use on filter
-    # }
-    # else {
-  # browser()   
+    # browser()   
   
     if(!is.null(get.overlapping.locs())){
       print(paste("get.overlapping.locs not null: ", as.vector(get.overlapping.locs())))
@@ -289,7 +284,6 @@ shinyServer(function(input, output, session) {
     # }
     selectInput("rtnLocationsMeetingCrit","Location(s): ", choices = structure(Locations), multiple=T)
   })
-  
 
   #for first plot  
   filtInput <- reactive({
@@ -360,7 +354,8 @@ shinyServer(function(input, output, session) {
       remote <- filter(tbl.scores,
                        locationID %in% input$rtnLocationsMeetingCrit)
     }
-
+  #TODO revisit, unclear below
+    #need 
     if (length(input$scoreType) == 1) {
       remote <- filter(tbl.scores,
                       scoreType == input$scoreType)
@@ -375,7 +370,7 @@ shinyServer(function(input, output, session) {
                        modelVariable == input$rtnModelVariable &
                        forecastType == input$rtnForecastType
     )
-    getit <- structure(collect(remote)) #database hit
+    getit <- structure(collect(remote))
   }) #end reactive
 
   output$summary <- renderPrint({

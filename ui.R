@@ -135,7 +135,6 @@ shinyUI(
           "Compare Skill Scores",
           # h2("Renders comparative plot of scores for two Systems / Setups"),
           wellPanel(
-            h4("note: Basline or \"Reference\" selections may be changed in the menu on the left"),
             column(2,
                    p("baseline")
             ),
@@ -149,6 +148,7 @@ shinyUI(
                    p(strong("Reference Forecast Setup:")),
                    strong(uiOutput("ReferenceSetup"))
                    ),
+            p("note: Baseline or \"Reference\" selections are changed in the menu on the left"),
             br()
                ),
             wellPanel(
