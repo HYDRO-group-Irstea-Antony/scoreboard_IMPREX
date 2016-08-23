@@ -104,7 +104,7 @@ shinyServer(function(input, output, session) {
     System <- select(tbl.scores, c(caseStudy, forecastSystem) )
     System <- filter(System, caseStudy==x)
     System <- unique(collect(System, n=Inf))
-    selectInput("rtnForecastSystem", "System:", choices = System$forecastSystem, multiple = F, selected = 2) # "E-HYPE" 
+    selectInput("rtnForecastSystem", "System:", choices = structure(System$forecastSystem), multiple = F, selected = 2) # "E-HYPE" 
     # ? 'selected' must be the values instead of names of 'choices' for the input 'rtnForecastSystem'
   })
   
@@ -136,12 +136,12 @@ shinyServer(function(input, output, session) {
   })
   
   
-    # note - set choices=character(0) to reset selections 
   output$Locations <- renderUI({
     #todo -- update with locations available on above-selected parameters
     x <- input$rtnCaseStudy
     y <- input$rtnForecastSystem
     z <- input$rtnForecastType #ex Bias Corr 
+    tab <- input$inTabset
       
     if (any(
       is.null(x),
@@ -150,9 +150,19 @@ shinyServer(function(input, output, session) {
     )) 
       return() # hits this each time there's a null in first two selections TAKE CARE for endless loop
 
-        
-
-    selectInput("rtnLocid","Location(s): ", choices = structure(Locations), multiple=T)
+    if (tab=="CompareSkillScores"){
+      # note - set choices=character(0) to reset selections 
+      return()
+    }
+    
+    Locations <- select(tbl.scores, c(locationID, caseStudy, forecastSystem, forecastType)) # forecastSetup
+    Locations <- filter(Locations, caseStudy == x & forecastSystem == y & forecastType == z)
+    Locations <- select(Locations, locationID)
+    Locations <- distinct(Locations)
+    Locations <- collect(Locations, n=Inf)
+    Locations <- sort(Locations$locationID)
+    print(paste("locations to control: ", Locations))
+    selectInput("rtnLocid","Location(s): ", choices = Locations, multiple=T) # order(Locations)
   })
 
     output$ScoreTypes <- renderUI({
@@ -291,7 +301,7 @@ shinyServer(function(input, output, session) {
   #for first plot  
   filtInput <- reactive({
     validate(
-      need(input$rtnLocid != "", "Please select at least one location")
+      need(input$rtnLocid != "", "Please select at least one location from the Filter, below")
     )
     
     if (length(input$rtnLocid) == 1) {

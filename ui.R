@@ -79,6 +79,7 @@ shinyUI(
 
         tabPanel(
           "Plot",
+          value="Plot",
           # h4("Plot a score over lead times"),
           wellPanel(
             column(5,
@@ -100,6 +101,7 @@ shinyUI(
         ),
         tabPanel(
           "Panel plots",
+          value="PanelPlots",
           # h4("Select and filter data to create "),
           # explore pauses: invalidateLater(2000, session)  # 2 seconds
           #output pdf
@@ -126,6 +128,7 @@ shinyUI(
         
         tabPanel(
           "Summary",
+          value="Summary",
           h4("Summary of selected values"),
           p(""),
           verbatimTextOutput("summary")
@@ -133,6 +136,7 @@ shinyUI(
         
         tabPanel(
           "Compare Skill Scores",
+          value="CompareSkillScores",
           # h2("Renders comparative plot of scores for two Systems / Setups"),
           wellPanel(
             column(2,
