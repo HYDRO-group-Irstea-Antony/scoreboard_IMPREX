@@ -67,7 +67,10 @@ shinyUI(
         h4("Filter Criteria"),
         uiOutput("ModelVariable"),
         uiOutput("ForecastType"),
-        uiOutput("Locations")
+        #note js nomenclature input.inTabset is equiv to input$inTabset
+        conditionalPanel("input.inTabset != 'CompareSkillScores'",
+          uiOutput("Locations")
+        )
         # uiOutput("ScoreType")
       )
     ),

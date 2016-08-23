@@ -141,7 +141,7 @@ shinyServer(function(input, output, session) {
     x <- input$rtnCaseStudy
     y <- input$rtnForecastSystem
     z <- input$rtnForecastType #ex Bias Corr 
-    tab <- input$inTabset
+    # tab <- input$inTabset # using this resets all Locations
       
     if (any(
       is.null(x),
@@ -150,10 +150,11 @@ shinyServer(function(input, output, session) {
     )) 
       return() # hits this each time there's a null in first two selections TAKE CARE for endless loop
 
-    if (tab=="CompareSkillScores"){
-      # note - set choices=character(0) to reset selections 
-      return()
-    }
+    # if (tab=="CompareSkillScores"){
+    #   # note - set choices=character(0) to reset selections 
+    #   # this isn't right because it clears the Location field anytime user clicks on this tab ... need condPanel
+    #   return()
+    # }
     
     Locations <- select(tbl.scores, c(locationID, caseStudy, forecastSystem, forecastType)) # forecastSetup
     Locations <- filter(Locations, caseStudy == x & forecastSystem == y & forecastType == z)
@@ -161,7 +162,7 @@ shinyServer(function(input, output, session) {
     Locations <- distinct(Locations)
     Locations <- collect(Locations, n=Inf)
     Locations <- sort(Locations$locationID)
-    print(paste("locations to control: ", Locations))
+    # print(paste("locations to control: ", Locations))
     selectInput("rtnLocid","Location(s): ", choices = Locations, multiple=T) # order(Locations)
   })
 
@@ -218,17 +219,11 @@ shinyServer(function(input, output, session) {
       is.null(z)
     )) 
       return()
-    
-    # browser()
-    
     SetupCompare <- select(tbl.scores, c(caseStudy, forecastSystem, forecastSetup, forecastType))
     SetupCompare <- filter(SetupCompare, forecastSystem==z) #  & caseStudy==y
     SetupCompare <- unique(collect(SetupCompare, n=Inf))
-    print(paste("SetupCompare$forecastSetup is: ", SetupCompare$forecastSetup))
+    # print(paste("SetupCompare$forecastSetup is: ", SetupCompare$forecastSetup))
     SetupCompare <- SetupCompare[SetupCompare$forecastSetup == SetupCompare$forecastSetup]
-    
-    # Setup <- filter(tbl.forecastsetup, ID==Setup$forecastSetup)
-    
     selectInput("rtnSetupToCompare","Forecast Setup: ", 
                 choices = structure(SetupCompare$forecastType), 
                 multiple=F)
@@ -236,7 +231,6 @@ shinyServer(function(input, output, session) {
 
 
   get.overlapping.locs <- reactive({
-    
     if(!is.null(input$rtnForecastSystem) & #not right?
        !is.null(input$rtnForecastType) &
        !is.null(input$rtnSystemToCompare) &
@@ -244,29 +238,44 @@ shinyServer(function(input, output, session) {
       # print("entering SQL query")
       sGetAllLocations <- paste0("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnForecastSystem, "' and \"forecastType\" = '", input$rtnForecastType , 
                                 "' and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnSystemToCompare, "' and \"forecastType\" = '", input$rtnSetupToCompare ,"');")
-      
       # cleaner, faster param query
       # sGetAllLocations <- paste("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'E-HYPE' and \"forecastType\" = 'Bias Correction 1' ",
       #                           "and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'EFAS SYS4' and \"forecastType\" = 'Bias Correction 2');")
       # print(paste("query: ", sGetAllLocations))
       rs <- dbSendQuery(db$con, sGetAllLocations) # use existing conn, seems to work w difft API
-      
       # cleanres <- sqlInterpolate(db$con, 
       #                            sGetAllLocsClean,
       #                            rs1 = input$rtnForecastSystem,
       #                            su1 = input$rtnForecastType,
       #                            rs2 = input$rtnSystemToCompare,
       #                            su2 = input$rtnSetupToCompare)
-      
       df <- dbFetch(rs)
-      # browser()
       dbClearResult(rs)
       return(df)
-    }
+      }
     })
-  
+
+  # TODO query valid scoreTypes for selected params
   #TODO update forecastSetup after System is selected
   # setup was forecastType
+  output$OverlappingScoreTypes <- renderUI({
+    a <- input$rtnSystemToCompare
+    b <- input$rtnForecastType
+    c <- input$rtnSystemToCompare
+    d <- input$rtnSetupToCompare
+    
+    if (any(
+      is.null(a),
+      is.null(b),
+      is.null(c),
+      is.null(d)
+    )) 
+      return()
+    
+    #TODO filter and select for remaining scores (for now will only be CRPS)
+    OverlappingScoreTypes <- structure(ctlScoreType$scoreType)
+  })
+
   
   # get.setup.by.system(
   #   
@@ -301,7 +310,7 @@ shinyServer(function(input, output, session) {
   #for first plot  
   filtInput <- reactive({
     validate(
-      need(input$rtnLocid != "", "Please select at least one location from the Filter, below")
+      need(input$rtnLocid != "", "Please select at least one location from Filter Criteria")
     )
     
     if (length(input$rtnLocid) == 1) {
