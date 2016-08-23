@@ -138,17 +138,20 @@ shinyServer(function(input, output, session) {
   
     # note - set choices=character(0) to reset selections 
   output$Locations <- renderUI({
-    if (is.null(ctlLocationName))
-      return()
-    # if(!is.null(output$CaseStudy))
-    # {
-    #   Location <- filter(ctlLocationName, caseStudy == output$CaseStudy)
-    #   Location <- ctlLocationName$locationID 
-    # }
-    # else {
-      #todo -- update with locations available on above-selected parameters
-      Locations <- ctlLocationName$locationID
-    # }
+    #todo -- update with locations available on above-selected parameters
+    x <- input$rtnCaseStudy
+    y <- input$rtnForecastSystem
+    z <- input$rtnForecastType #ex Bias Corr 
+      
+    if (any(
+      is.null(x),
+      is.null(y),
+      is.null(z)
+    )) 
+      return() # hits this each time there's a null in first two selections TAKE CARE for endless loop
+
+        
+
     selectInput("rtnLocid","Location(s): ", choices = structure(Locations), multiple=T)
   })
 
