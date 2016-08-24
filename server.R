@@ -211,7 +211,6 @@ shinyServer(function(input, output, session) {
     selectInput("rtnSystemToCompare", "System:", choices = System, multiple = F) #selected = none?
   })
   
-# todo pull choices like output$Setup, above
   output$SetupToCompare <- renderUI({
     z <- input$rtnSystemToCompare
     if (any(
@@ -230,7 +229,7 @@ shinyServer(function(input, output, session) {
 
 
   get.overlapping.locs <- reactive({
-    if(!is.null(input$rtnForecastSystem) & #not right?
+    if(!is.null(input$rtnForecastSystem) & # right?
        !is.null(input$rtnForecastType) &
        !is.null(input$rtnSystemToCompare) &
        !is.null(input$rtnSetupToCompare) ){
@@ -251,13 +250,15 @@ shinyServer(function(input, output, session) {
       df <- dbFetch(rs)
       dbClearResult(rs)
       return(df)
+    }
+    else {
+      return()
       }
     })
 
   # TODO query valid scoreTypes for selected params
-  #TODO update forecastSetup after System is selected
-  # setup was forecastType
-  output$OverlappingScoreTypes <- renderUI({
+  # output$OverlappingScoreTypes
+  get.overlapping.scoretypes <- reactive({
     a <- input$rtnSystemToCompare
     b <- input$rtnForecastType
     c <- input$rtnSystemToCompare
@@ -271,16 +272,20 @@ shinyServer(function(input, output, session) {
     )) 
       return()
     
-    #TODO filter and select for remaining scores (for now will only be CRPS)
-    OverlappingScoreTypes <- #### structure(ctlScoreType$scoreType)
+    print("here comes sql query")
+    sqlOverlappingScoreTypes <- paste0("select distinct(\"scoreType\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnForecastSystem, 
+                                       "' and \"forecastType\" = '", input$rtnForecastType , 
+                                       "' and \"scoreType\" in ",
+                                       "(select distinct(\"scoreType\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnSystemToCompare, 
+                                       "' and \"forecastType\" = '", input$rtnSetupToCompare ,"');")
+    print(paste("query: ", sqlOverlappingScoreTypes))
+    rs <- dbSendQuery(db$con, sqlOverlappingScoreTypes ) 
+    df <- dbFetch(rs)
+    # browser()
+    dbClearResult(rs)
+    return(df)
     
   })
-
-  
-  # get.setup.by.system(
-  #   
-  # )
-  
 
     
   output$LocationsAll <- renderUI({
@@ -288,23 +293,40 @@ shinyServer(function(input, output, session) {
       return()
     # browser()   
   
-    if(!is.null(get.overlapping.locs())){
-      print(paste("get.overlapping.locs not null: ", as.vector(get.overlapping.locs())))
-    }
-    if(length(get.overlapping.locs())>0){
-      print(paste("get.overlapping.locs len>0: ", as.vector(get.overlapping.locs())))
-    }
+    # if(!is.null(get.overlapping.locs())){
+    #   print(paste("get.overlapping.locs not null: ", as.vector(get.overlapping.locs())))
+    # }
+    # if(length(get.overlapping.locs())>0){
+    #   print(paste("get.overlapping.locs len>0: ", as.vector(get.overlapping.locs())))
+    # }
     
     if(!is.null(get.overlapping.locs())){
-      Locations <- as.vector(get.overlapping.locs())
+      LocationsAll <- as.vector(get.overlapping.locs())
     }
     else {
       return()
       # Locations <- c("No Locations in selection") 
     }
+    selectInput("rtnLocationsMeetingCrit","Location(s): ", choices = structure(LocationsAll), multiple=T)
+  })
     
-    # }
-    selectInput("rtnLocationsMeetingCrit","Location(s): ", choices = structure(Locations), multiple=T)
+  output$ScoreTypesInBoth <- renderUI({
+
+      # if(!is.null(get.overlapping.locs())){
+      #   print(paste("get.overlapping.locs not null: ", as.vector(get.overlapping.locs())))
+      # }
+      # if(length(get.overlapping.locs())>0){
+      #   print(paste("get.overlapping.locs len>0: ", as.vector(get.overlapping.locs())))
+      # }
+      
+      if(!is.null(get.overlapping.scoretypes())){
+        ScoreTypesInBoth <- as.vector(get.overlapping.scoretypes())
+        # browser()
+      }
+      else {
+        return()
+      }
+    selectInput("rtnScoreTypesMeetingCrit","Score Type(s): ", choices = structure(ScoreTypesInBoth$scoreType), multiple=T)
   })
 
   #for first plot  
@@ -363,7 +385,8 @@ shinyServer(function(input, output, session) {
 ##
   compareSkillScores <- reactive({
     validate(
-      need(input$LocationsAll != "", "Please select at least one location and one or more Forecast Setups to plot")
+      need(input$LocationsAll != "", "Please select at least one location and one or more Forecast Setups to plot"),
+      need(input$ScoreTypesInBoth != "", "Please select at least one location and one or more Forecast Setups to plot")
     )
     
     #what goes in
@@ -376,6 +399,17 @@ shinyServer(function(input, output, session) {
       remote <- filter(tbl.scores,
                        locationID %in% input$rtnLocationsMeetingCrit)
     }
+
+    #ScoreType
+    if (length(input$rtnScoreTypesMeetingCrit) == 1) {
+      remote <- filter(tbl.scores,
+                       scoreType == input$rtnScoreTypesMeetingCrit)
+    }
+    else if (length(input$rtnScoreTypesMeetingCrit) > 1) {
+      remote <- filter(tbl.scores,
+                       scoreType %in% input$rtnScoreTypesMeetingCrit)
+    }
+    
   #TODO revisit, unclear below
     #need 
     if (length(input$scoreType) == 1) {
@@ -405,18 +439,14 @@ shinyServer(function(input, output, session) {
   
   output$compareSkillScorePlot <- renderPlot({
     validate(
-      need(!is.null(input$rtnLocationsMeetingCrit), "Select one or more data elements from the Filter to begin")
-      # need(!is.null()) , score selection box...
+      need(!is.null(input$rtnLocationsMeetingCrit), "Select one or more Location(s) to begin"),
+      need(!is.null(input$rtnScoreTypesMeetingCrit), "Select one or more ScoreType(s) to begin")
     )
     
     d <- skillScore()
-    
-    if (nrow(filtSkillScores()) == 0) {
-      plot(1, 1, col = "white")
-      text(1, 1, "The database doesn't have information on this combination of variables (yet)")
-    } else {
-      p("we'll have a plot here in a bit...")
-      # loc.count <- length(loc.sum$locationID)
+
+      filtSkillScores()
+      
       # plotInput <- 
       # ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
       #   geom_line(size = 1) +
@@ -434,23 +464,21 @@ shinyServer(function(input, output, session) {
       #   theme(panel.margin.x = unit(2 / (length(unique(loc.sum$locationID)) - 1), "lines")) +
       #   theme(panel.margin.y = unit(2 / (length(unique(loc.sum$scoreType)) - 1), "lines")) +
       #   theme(strip.text = element_text(size=14, vjust=0.5))    
-    }
-    
+
   })
-  
-  
   
   output$seriesPlot <- renderPlot({
     validate(
       need(!is.null(filtInput()), "Select one or more data elements from the Filter to begin")
     )
-    if (nrow(filtInput()) == 0 || length(filtInput()) == 0) {
-      plot(1, 1, col = "white")
-      text(1, 1,"Select one or more data elements from the Filter to begin")
-    }
-    else if (nrow(filtInput()) == 0 || length(filtInput()) == 0) {
-      text(1, 1, "filtInput() was empty, try a different combo")
-    } else {      # have data
+    #TODO NOT SURE IF VALIDATE WAS ENOUGH ... NEW ERRORS??
+    # if (nrow(filtInput()) == 0 || length(filtInput()) == 0) {
+    #   plot(1, 1, col = "white")
+    #   text(1, 1,"Select one or more data elements from the Filter to begin")
+    # }
+    # else if (nrow(filtInput()) == 0 || length(filtInput()) == 0) {
+    #   text(1, 1, "filtInput() was empty, try a different combo")
+    # } else {      # have data
       filtered.input <- filtInput() # debug rename in summarySE
       loc.sum <- summarySE(filtered.input,
         measurevar = "scoreValue",
@@ -458,7 +486,7 @@ shinyServer(function(input, output, session) {
         na.rm = TRUE)
       loc.sum$locationID <- as.factor(loc.sum$locationID)
       na.count <- sum(filtered.input$scoreNA) 
-    } # end else
+    # } # end else
     
     if (nrow(filtInput()) == 0) {
       plot(1, 1, col = "white")

@@ -165,7 +165,7 @@ shinyUI(
               column(4,
                      # p("select another Setup to compare"),
                      uiOutput("SystemToCompare"),
-                     # uiOutput("ScoreTypes"), # multiple = T #using control 2* causes loops???
+                     uiOutput("ScoreTypesInBoth"),
                      uiOutput("LocationsAll")
                      ),
               column(3,
