@@ -137,7 +137,6 @@ shinyServer(function(input, output, session) {
   
   
   output$Locations <- renderUI({
-    #todo -- update with locations available on above-selected parameters
     x <- input$rtnCaseStudy
     y <- input$rtnForecastSystem
     z <- input$rtnForecastType #ex Bias Corr 
@@ -273,7 +272,8 @@ shinyServer(function(input, output, session) {
       return()
     
     #TODO filter and select for remaining scores (for now will only be CRPS)
-    OverlappingScoreTypes <- structure(ctlScoreType$scoreType)
+    OverlappingScoreTypes <- #### structure(ctlScoreType$scoreType)
+    
   })
 
   
