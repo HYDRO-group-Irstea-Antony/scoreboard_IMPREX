@@ -193,15 +193,14 @@ shinyServer(function(input, output, session) {
     selectInput("rtnModelVariable","Variable: ", choices = structure(ModelVariable), multiple=F)
   })
   
-  
   ########################" TAB 3 Compare Skill Scores
   
   output$ReferenceSystem <- renderUI({
-    paste("    ", input$rtnForecastSystem)    #"ReferenceSystem", System
+    paste("> ", input$rtnForecastSystem)    #"ReferenceSystem", System
   })
   
   output$ReferenceSetup <- renderUI({
-    paste("    ", input$rtnForecastType)    #"ReferenceSystem", Setup
+    paste("> ", input$rtnForecastType)    #"ReferenceSystem", Setup
   })
   
   output$SystemToCompare <- renderUI({
@@ -226,7 +225,6 @@ shinyServer(function(input, output, session) {
                 choices = structure(SetupCompare$forecastType), 
                 multiple=F)
   })
-
 
   get.overlapping.locs <- reactive({
     if(!is.null(input$rtnForecastSystem) & # right?
@@ -256,7 +254,7 @@ shinyServer(function(input, output, session) {
       }
     })
 
-  # TODO query valid scoreTypes for selected params
+  # DONE query valid scoreTypes for selected params
   # output$OverlappingScoreTypes
   get.overlapping.scoretypes <- reactive({
     a <- input$rtnSystemToCompare
@@ -357,10 +355,20 @@ shinyServer(function(input, output, session) {
   filtSkillScores <- reactive({
     validate(
       need(input$rtnLocid != "", "Please select at least one location and one or more scores (below)")
+      # TODO add validation points
       # need(input$)
     )
     list.skill.scores <- input$rtnAllScoreTypes
-
+    if (length(list.skill.scores) == 1) {
+      remote <- filter(tbl.scores,
+                       scoreType == list.skill.scores)
+    }
+    else if (length(list.skill.scores) > 1) {
+      remote <- filter(tbl.scores,
+                       scoreType %in% list.skill.scores)
+    }
+    
+    
     if (length(input$rtnLocid) == 1) {
       remote <- filter(tbl.scores,
                        locationID == input$rtnLocid)
@@ -375,8 +383,8 @@ shinyServer(function(input, output, session) {
                        forecastSystem == input$rtnForecastSystem  &
                        # scoreNA == FALSE & #more like "bad data" now, contains -Infinity too
                        modelVariable == input$rtnModelVariable &
-                       forecastType == input$rtnForecastType &
-                       scoreType %in% list.skill.scores # TODO if only 1 selected?? (do as compareSkillScores below)
+                       forecastType == input$rtnForecastType
+                       # scoreType %in% list.skill.scores # TODO if only 1 selected?? (do as compareSkillScores below)
     )
     getit <- structure(collect(remote)) 
   }) #end reactive
@@ -410,23 +418,14 @@ shinyServer(function(input, output, session) {
                        scoreType %in% input$rtnScoreTypesMeetingCrit)
     }
     
-  #TODO revisit, unclear below
-    #need 
-    if (length(input$scoreType) == 1) {
-      remote <- filter(tbl.scores,
-                      scoreType == input$scoreType)
-    } else {
-      remote <- filter(tbl.scores,
-                       scoreType %in% input$scoreType)
-    }
-    
     remote <- filter(remote,
-                     caseStudy == input$rtnCaseStudy &
-                       forecastSystem == input$rtnForecastSystem  &
-                       modelVariable == input$rtnModelVariable &
-                       forecastType == input$rtnForecastType
+                       caseStudy == input$rtnCaseStudy &
+                       # forecastSystem == input$rtnForecastSystem  &
+                       modelVariable == input$rtnModelVariable
     )
     getit <- structure(collect(remote))
+    browser()
+    
   }) #end reactive
 
   output$summary <- renderPrint({
@@ -439,15 +438,41 @@ shinyServer(function(input, output, session) {
   
   output$compareSkillScorePlot <- renderPlot({
     validate(
+      # compareSkillScores
       need(!is.null(input$rtnLocationsMeetingCrit), "Select one or more Location(s) to begin"),
       need(!is.null(input$rtnScoreTypesMeetingCrit), "Select one or more ScoreType(s) to begin")
     )
     
-    d <- skillScore()
+    df <- compareSkillScores()
+    if (length(df)<1){
+      return()
+    }
+    
+    #TODO need smart filter for lead times
+    df <- filter(df, leadtimeValue %in% c(1,2,3,4,5,6))
+    
+    #TODO replace w smart filter for _______
+    df$ref = NA
+    df$ref[df$forecastType=="Bias Correction 2"] = "ref"
+    df$ref[df$forecastType!="Bias Correction 2"] = "new"
+    
+    #step 1, aggregate dataet
+    agg <- c("forecastSetup", "forecastSystem", "forecastType", "locationID", "leadtimeValue", "scoreType", "ref")
+    df.sum <- summarySE(data = df, "scoreValue", agg, na.rm = T)
+    
+    #step 2
+    df3 <- skillScore(df.sum)
 
-      filtSkillScores()
-      
-      # plotInput <- 
+
+    # step 3
+    #3, run df3 thru something like this to frame up
+    df.plot = data.frame(LocationID = rep(unique(df.sum$locationID), each = length(unique(df.sum$leadtimeValue))), 
+                       leadtimeValue = rep(unique(df.sum$leadtimeValue), times = length(unique(df.sum$locationID))), 
+                       ScoreValue = df3[2:length(df3)])
+    
+
+    plotInput <- 
+      ggplot(df.plot,  aes(color = locationID, x = leadtimeValue, y = scoreValue ))
       # ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
       #   geom_line(size = 1) +
       #   geom_point(aes(color = locationID)) +
