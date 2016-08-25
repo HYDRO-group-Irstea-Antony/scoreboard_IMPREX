@@ -19,7 +19,7 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
                       conf.interval=.95, .drop=TRUE) {
   # library(plyr); library(dplyr)
   # library(reshape2)
- library(dplyr)
+  library(dplyr)
   
   # New version of length which can handle NA's: if na.rm==T, don't count them
   length2 <- function (x, na.rm=FALSE) {
@@ -31,19 +31,19 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
   # N, mean, and sd
   
   datac <- plyr::ddply(data, groupvars, .drop=.drop,
-                 .fun = function(xx, col) {
-                   c(N    = length2(xx[[col]], na.rm=na.rm),
-                     mean = mean   (xx[[col]], na.rm=na.rm),
-                     sd   = sd     (xx[[col]], na.rm=na.rm)
-                   )
-                 },
-                 measurevar
+                       .fun = function(xx, col) {
+                         c(N    = length2(xx[[col]], na.rm=na.rm),
+                           mean = mean   (xx[[col]], na.rm=na.rm),
+                           sd   = sd     (xx[[col]], na.rm=na.rm)
+                         )
+                       },
+                       measurevar
   )
   
   # Rename the "mean" column
   # datac <- rename(datac, c("mean" = measurevar)) # causes issues w plyr?
   names(datac)[names(datac)=="mean"] <- measurevar # simpler jbn
-
+  
   datac$se <- datac$sd / sqrt(datac$N)  # Calculate standard error of the mean
   
   # Confidence interval multiplier for standard error
@@ -57,22 +57,25 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
 
 # expects to see col named "ref" with values "new" or "ref"
 
-skillScore <- function(data, measurevar = "scoreValue", groupvars=NULL, na.rm=FALSE, .drop=TRUE) {
-  library(dplyr)
-  
-  length2 <- function (x, na.rm=FALSE) {
-    if (na.rm) sum(!is.na(x))
-    else length(x)
+skillScore <- function(dl) {
+  df_out = NULL
+  print(unique(dl$scoreType))
+  for (my_score_type in unique(dl$scoreType)){
+    df = NULL
+    data <- as.list(split(dl[ dl$scoreType == my_score_type, c("reference", "scoreValue")], f=as.factor(dl$locationID)) )
+    list.out  <- lapply(data, function(x){  
+      ss   = 1 - (x[x$reference == "new", "scoreValue"] / x[x$reference == "ref", "scoreValue"])
+    })
+    df <- as.data.frame(list.out)
+    print(summary(df))
+    #xformed to factors, drop the leading X
+    names(df) <- sub(pattern = "X", replacement = "", colnames(df))
+    df <- stack(df)
+    colnames(df) <- c("scoreValue", "locationID")
+    df$leadtimeValue <- rep(unique(dl$leadtimeValue[dl$scoreType == my_score_type]), 
+                            times = length(unique(dl$locationID[dl$scoreType == my_score_type])))
+    df$scoreType = my_score_type
+    if(is.null(df_out)) {df_out = df} else {df_out = rbind(df_out, df)}
   }
-  
-  datac <- plyr::ddply(data, groupvars, .drop=.drop,
-                       .fun = function(xx, col, ref) {
-                         # print(xx[[col]]) # debug
-                         c(N    = length2(xx[[col]], na.rm=na.rm),
-                           ss   = 1 - (xx[ref == "new", col] / xx[ref == "ref", col]),
-                           mean = mean   (xx[[col]], na.rm=na.rm)
-                         )
-                       }, measurevar, data$ref
-            )
-  return(datac)
+  return(df_out)
 }

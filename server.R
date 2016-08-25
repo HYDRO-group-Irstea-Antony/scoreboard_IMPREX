@@ -33,7 +33,7 @@ tbl.forecastsetup <- tbl(db, "tblForecastSetup")
 
 # defined within the interface table
 tmpCaseStudy <-
-    filter(tbl.interface,
+  filter(tbl.interface,
          ObjectName == "Case Study" & LanguageID == RElanguage)
 ctlCaseStudy <- collect(tmpCaseStudy)
 #ctlCaseStudy <- ctlCaseStudy[,c(4,2)] #ID, CaseStudy
@@ -71,7 +71,7 @@ ctlLocationName <-
 
 shinyServer(function(input, output, session) {
   
-# trying out deps on caseStudy
+  # trying out deps on caseStudy
   # location.list <- reactive({
   #   if(is.null(input$rtnCaseStudy))
   #     return()
@@ -92,7 +92,7 @@ shinyServer(function(input, output, session) {
                 paste("Case Study:"),  # (",length(unique(ctlCaseStudy$ObjectItemName)), ")
                 choices = CaseStudy, multiple = F)
   })
-
+  
   output$System <- renderUI({
     x <- input$rtnCaseStudy
     # browser()
@@ -104,7 +104,7 @@ shinyServer(function(input, output, session) {
     System <- select(tbl.scores, c(caseStudy, forecastSystem) )
     System <- filter(System, caseStudy==x)
     System <- unique(collect(System, n=Inf))
-    selectInput("rtnForecastSystem", "System:", choices = System$forecastSystem, multiple = F, selected = 2) # "E-HYPE" 
+    selectInput("rtnForecastSystem", "System:", choices = structure(System$forecastSystem), multiple = F, selected = 2) # "E-HYPE" 
     # ? 'selected' must be the values instead of names of 'choices' for the input 'rtnForecastSystem'
   })
   
@@ -118,13 +118,13 @@ shinyServer(function(input, output, session) {
       is.null(y)
     )) 
       return() # hits this each time there's a null in first two selections TAKE CARE for endless loop
-
+    
     # browser()
     
     Setup <- select(tbl.scores, c(caseStudy, forecastSystem, forecastSetup, forecastType))
     Setup <- filter(Setup, forecastSystem==x & caseStudy==y)
     Setup <- unique(collect(Setup, n=Inf))
-    print(paste("Setup$forecastSetup is: ", Setup$forecastSetup))
+    # print(paste("Setup$forecastSetup is: ", Setup$forecastSetup))
     Setup <- Setup[Setup$forecastSetup == Setup$forecastSetup]
     
     # Setup <- filter(tbl.forecastsetup, ID==Setup$forecastSetup)
@@ -132,30 +132,40 @@ shinyServer(function(input, output, session) {
     selectInput("rtnForecastType","Forecast Setup: ", 
                 choices = structure(Setup$forecastType), 
                 multiple=F)
-
+    
   })
   
   
-    # note - set choices=character(0) to reset selections 
   output$Locations <- renderUI({
-    #todo -- update with locations available on above-selected parameters
     x <- input$rtnCaseStudy
     y <- input$rtnForecastSystem
     z <- input$rtnForecastType #ex Bias Corr 
-      
+    # tab <- input$inTabset # using this resets all Locations
+    
     if (any(
       is.null(x),
       is.null(y),
       is.null(z)
     )) 
       return() # hits this each time there's a null in first two selections TAKE CARE for endless loop
-
-        
-
-    selectInput("rtnLocid","Location(s): ", choices = structure(Locations), multiple=T)
+    
+    # if (tab=="CompareSkillScores"){
+    #   # note - set choices=character(0) to reset selections 
+    #   # this isn't right because it clears the Location field anytime user clicks on this tab ... need condPanel
+    #   return()
+    # }
+    
+    Locations <- select(tbl.scores, c(locationID, caseStudy, forecastSystem, forecastType)) # forecastSetup
+    Locations <- filter(Locations, caseStudy == x & forecastSystem == y & forecastType == z)
+    Locations <- select(Locations, locationID)
+    Locations <- distinct(Locations)
+    Locations <- collect(Locations, n=Inf)
+    Locations <- sort(Locations$locationID)
+    # print(paste("locations to control: ", Locations))
+    selectInput("rtnLocid","Location(s): ", choices = Locations, multiple=T) # order(Locations)
   })
-
-    output$ScoreTypes <- renderUI({
+  
+  output$ScoreTypes <- renderUI({
     if(!is.null(ctlScoreType)) {
       # ScoreType <- structure(ctlScoreType)
       ScoreTypes <- structure(ctlScoreType$scoreType)
@@ -175,7 +185,7 @@ shinyServer(function(input, output, session) {
     }
     selectInput("rtnScoreType","Score Type", choices = ScoreType, multiple=F)
   })
-
+  
   output$ModelVariable <- renderUI({
     if (is.null(ctlModelVariable))
       return()
@@ -183,15 +193,14 @@ shinyServer(function(input, output, session) {
     selectInput("rtnModelVariable","Variable: ", choices = structure(ModelVariable), multiple=F)
   })
   
-  
   ########################" TAB 3 Compare Skill Scores
   
   output$ReferenceSystem <- renderUI({
-    paste("    ", input$rtnForecastSystem)    #"ReferenceSystem", System
+    paste("> ", input$rtnForecastSystem)    #"ReferenceSystem", System
   })
   
   output$ReferenceSetup <- renderUI({
-    paste("    ", input$rtnForecastType)    #"ReferenceSystem", Setup
+    paste("> ", input$rtnForecastType)    #"ReferenceSystem", Setup
   })
   
   output$SystemToCompare <- renderUI({
@@ -201,97 +210,126 @@ shinyServer(function(input, output, session) {
     selectInput("rtnSystemToCompare", "System:", choices = System, multiple = F) #selected = none?
   })
   
-# todo pull choices like output$Setup, above
   output$SetupToCompare <- renderUI({
     z <- input$rtnSystemToCompare
     if (any(
       is.null(z)
     )) 
       return()
-    
-    # browser()
-    
     SetupCompare <- select(tbl.scores, c(caseStudy, forecastSystem, forecastSetup, forecastType))
     SetupCompare <- filter(SetupCompare, forecastSystem==z) #  & caseStudy==y
     SetupCompare <- unique(collect(SetupCompare, n=Inf))
-    print(paste("SetupCompare$forecastSetup is: ", SetupCompare$forecastSetup))
+    # print(paste("SetupCompare$forecastSetup is: ", SetupCompare$forecastSetup))
     SetupCompare <- SetupCompare[SetupCompare$forecastSetup == SetupCompare$forecastSetup]
-    
-    # Setup <- filter(tbl.forecastsetup, ID==Setup$forecastSetup)
-    
     selectInput("rtnSetupToCompare","Forecast Setup: ", 
                 choices = structure(SetupCompare$forecastType), 
                 multiple=F)
   })
-
-
+  
   get.overlapping.locs <- reactive({
-    
-    if(!is.null(input$rtnForecastSystem) & #not right?
+    if(!is.null(input$rtnForecastSystem) & # right?
        !is.null(input$rtnForecastType) &
        !is.null(input$rtnSystemToCompare) &
        !is.null(input$rtnSetupToCompare) ){
       # print("entering SQL query")
       sGetAllLocations <- paste0("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnForecastSystem, "' and \"forecastType\" = '", input$rtnForecastType , 
-                                "' and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnSystemToCompare, "' and \"forecastType\" = '", input$rtnSetupToCompare ,"');")
-      
+                                 "' and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnSystemToCompare, "' and \"forecastType\" = '", input$rtnSetupToCompare ,"');")
       # cleaner, faster param query
       # sGetAllLocations <- paste("select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'E-HYPE' and \"forecastType\" = 'Bias Correction 1' ",
       #                           "and \"locationID\" in (select distinct(\"locationID\") from \"tblScores\" where \"forecastSystem\" = 'EFAS SYS4' and \"forecastType\" = 'Bias Correction 2');")
       # print(paste("query: ", sGetAllLocations))
       rs <- dbSendQuery(db$con, sGetAllLocations) # use existing conn, seems to work w difft API
-      
       # cleanres <- sqlInterpolate(db$con, 
       #                            sGetAllLocsClean,
       #                            rs1 = input$rtnForecastSystem,
       #                            su1 = input$rtnForecastType,
       #                            rs2 = input$rtnSystemToCompare,
       #                            su2 = input$rtnSetupToCompare)
-      
       df <- dbFetch(rs)
-      # browser()
       dbClearResult(rs)
       return(df)
     }
-    })
+    else {
+      return()
+    }
+  })
   
-  #TODO update forecastSetup after System is selected
-  # setup was forecastType
-  
-  # get.setup.by.system(
-  #   
-  # )
-  
-
+  # DONE query valid scoreTypes for selected params
+  # output$OverlappingScoreTypes
+  get.overlapping.scoretypes <- reactive({
+    a <- input$rtnSystemToCompare
+    b <- input$rtnForecastType
+    c <- input$rtnSystemToCompare
+    d <- input$rtnSetupToCompare
     
+    if (any(
+      is.null(a),
+      is.null(b),
+      is.null(c),
+      is.null(d)
+    )) 
+      return()
+    
+    # print("here comes sql query")
+    sqlOverlappingScoreTypes <- paste0("select distinct(\"scoreType\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnForecastSystem, 
+                                       "' and \"forecastType\" = '", input$rtnForecastType , 
+                                       "' and \"scoreType\" in ",
+                                       "(select distinct(\"scoreType\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnSystemToCompare, 
+                                       "' and \"forecastType\" = '", input$rtnSetupToCompare ,"');")
+    # print(paste("query: ", sqlOverlappingScoreTypes))
+    rs <- dbSendQuery(db$con, sqlOverlappingScoreTypes ) 
+    df <- dbFetch(rs)
+    # browser()
+    dbClearResult(rs)
+    return(df)
+  })
+  
+  
   output$LocationsAll <- renderUI({
     if (is.null(ctlLocationName))
       return()
     # browser()   
-  
-    if(!is.null(get.overlapping.locs())){
-      print(paste("get.overlapping.locs not null: ", as.vector(get.overlapping.locs())))
-    }
-    if(length(get.overlapping.locs())>0){
-      print(paste("get.overlapping.locs len>0: ", as.vector(get.overlapping.locs())))
-    }
+    
+    # if(!is.null(get.overlapping.locs())){
+    #   print(paste("get.overlapping.locs not null: ", as.vector(get.overlapping.locs())))
+    # }
+    # if(length(get.overlapping.locs())>0){
+    #   print(paste("get.overlapping.locs len>0: ", as.vector(get.overlapping.locs())))
+    # }
     
     if(!is.null(get.overlapping.locs())){
-      Locations <- as.vector(get.overlapping.locs())
+      LocationsAll <- as.vector(get.overlapping.locs())
     }
     else {
       return()
       # Locations <- c("No Locations in selection") 
     }
-    
-    # }
-    selectInput("rtnLocationsMeetingCrit","Location(s): ", choices = structure(Locations), multiple=T)
+    selectInput("rtnLocationsMeetingCrit","Location(s): ", choices = structure(LocationsAll), multiple=T)
   })
-
+  
+  output$ScoreTypesInBoth <- renderUI({
+    
+    # if(!is.null(get.overlapping.locs())){
+    #   print(paste("get.overlapping.locs not null: ", as.vector(get.overlapping.locs())))
+    # }
+    # if(length(get.overlapping.locs())>0){
+    #   print(paste("get.overlapping.locs len>0: ", as.vector(get.overlapping.locs())))
+    # }
+    
+    if(!is.null(get.overlapping.scoretypes())){
+      ScoreTypesInBoth <- as.vector(get.overlapping.scoretypes())
+      # browser()
+    }
+    else {
+      return()
+    }
+    selectInput("rtnScoreTypesMeetingCrit","Score Type(s): ", choices = structure(ScoreTypesInBoth$scoreType), multiple=T)
+  })
+  
   #for first plot  
   filtInput <- reactive({
     validate(
-      need(input$rtnLocid != "", "Please select at least one location")
+      need(input$rtnLocid != "", "Please select at least one location from Filter Criteria")
     )
     
     if (length(input$rtnLocid) == 1) {
@@ -304,11 +342,11 @@ shinyServer(function(input, output, session) {
     }
     
     remote <- filter(remote,
-      caseStudy == input$rtnCaseStudy &
-      forecastSystem == input$rtnForecastSystem  & # ex ehype
-      modelVariable == input$rtnModelVariable &
-      forecastType == input$rtnForecastType & # ex Bias Corr 1
-      scoreType == input$rtnScoreType
+                     caseStudy == input$rtnCaseStudy &
+                       forecastSystem == input$rtnForecastSystem  & # ex ehype
+                       modelVariable == input$rtnModelVariable &
+                       forecastType == input$rtnForecastType & # ex Bias Corr 1
+                       scoreType == input$rtnScoreType
     )
     getit <- structure(collect(remote))
   }) #end reactive
@@ -316,10 +354,20 @@ shinyServer(function(input, output, session) {
   filtSkillScores <- reactive({
     validate(
       need(input$rtnLocid != "", "Please select at least one location and one or more scores (below)")
+      # TODO add validation points
       # need(input$)
     )
     list.skill.scores <- input$rtnAllScoreTypes
-
+    if (length(list.skill.scores) == 1) {
+      remote <- filter(tbl.scores,
+                       scoreType == list.skill.scores)
+    }
+    else if (length(list.skill.scores) > 1) {
+      remote <- filter(tbl.scores,
+                       scoreType %in% list.skill.scores)
+    }
+    
+    
     if (length(input$rtnLocid) == 1) {
       remote <- filter(tbl.scores,
                        locationID == input$rtnLocid)
@@ -334,18 +382,19 @@ shinyServer(function(input, output, session) {
                        forecastSystem == input$rtnForecastSystem  &
                        # scoreNA == FALSE & #more like "bad data" now, contains -Infinity too
                        modelVariable == input$rtnModelVariable &
-                       forecastType == input$rtnForecastType &
-                       scoreType %in% list.skill.scores # TODO if only 1 selected?? (do as compareSkillScores below)
+                       forecastType == input$rtnForecastType
+                     # scoreType %in% list.skill.scores # TODO if only 1 selected?? (do as compareSkillScores below)
     )
     getit <- structure(collect(remote)) 
   }) #end reactive
-
-############ this builds the dataset needed for compareSkillScorePlot
-##
+  
+  ############ this builds the dataset needed for compareSkillScorePlot
+  ##
   compareSkillScores <- reactive({
-    validate(
-      need(input$LocationsAll != "", "Please select at least one location and one or more Forecast Setups to plot")
-    )
+    #     validate(
+    #       need(input$LocationsAll != "", "Please select at least one location and one or more Forecast Setups to plot"),
+    #       need(input$ScoreTypesInBoth != "", "Please select at least one location and one or more Forecast Setups to plot")
+    #     )
     
     #what goes in
     #Location
@@ -357,74 +406,111 @@ shinyServer(function(input, output, session) {
       remote <- filter(tbl.scores,
                        locationID %in% input$rtnLocationsMeetingCrit)
     }
-  #TODO revisit, unclear below
-    #need 
-    if (length(input$scoreType) == 1) {
-      remote <- filter(tbl.scores,
-                      scoreType == input$scoreType)
-    } else {
-      remote <- filter(tbl.scores,
-                       scoreType %in% input$scoreType)
+    
+    #ScoreType
+    if (length(input$rtnScoreTypesMeetingCrit) == 1) {
+      remote <- filter(remote,
+                       scoreType == input$rtnScoreTypesMeetingCrit)
+    }
+    else if (length(input$rtnScoreTypesMeetingCrit) > 1) {
+      remote <- filter(remote,
+                       scoreType %in% input$rtnScoreTypesMeetingCrit)
     }
     
     remote <- filter(remote,
                      caseStudy == input$rtnCaseStudy &
-                       forecastSystem == input$rtnForecastSystem  &
-                       modelVariable == input$rtnModelVariable &
-                       forecastType == input$rtnForecastType
+                       # forecastSystem == input$rtnForecastSystem  &
+                       modelVariable == input$rtnModelVariable
     )
     getit <- structure(collect(remote))
+    # browser()
+    
   }) #end reactive
-
+  
   output$summary <- renderPrint({
     dataset <- filtInput()
     dataset <- within(
       dataset, rm("row.names", "datePartUnit", "forecastSystem", "forecastRange", "caseStudy",  "leadtimeUnit", "leadtimeValue")
-      )
+    )
     summary(dataset)
   })
   
   output$compareSkillScorePlot <- renderPlot({
     validate(
-      need(!is.null(input$rtnLocationsMeetingCrit), "Select one or more data elements from the Filter to begin")
-      # need(!is.null()) , score selection box...
+      # compareSkillScores
+      need(!is.null(input$rtnLocationsMeetingCrit), "Select one or more Location(s) to begin"),
+      need(!is.null(input$rtnScoreTypesMeetingCrit), "Select one or more ScoreType(s) to begin")
     )
     
-    d <- skillScore()
-    
-    if (nrow(filtSkillScores()) == 0) {
-      plot(1, 1, col = "white")
-      text(1, 1, "The database doesn't have information on this combination of variables (yet)")
-    } else {
-      p("we'll have a plot here in a bit...")
-      # loc.count <- length(loc.sum$locationID)
-      # plotInput <- 
-      # ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
-      #   geom_line(size = 1) +
-      #   geom_point(aes(color = locationID)) +
-      #   facet_grid(scoreType ~ locationID, scales = "free_y") + #margin = TRUE
-      #   geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
-      #   xlab(paste("Lead Times (",loc.sum$datePartUnit,")", sep="")) + 
-      #   ylab("Scores") +
-      #   theme_bw() + 
-      #   theme(panel.grid.major = element_line(colour = NA)) +
-      #   theme(axis.text = element_text(size=14, vjust=0.5)) +
-      #   theme(legend.text = element_text(size=14, vjust=0.5)) +
-      #   theme(title = element_text(size = 14)) + 
-      #   scale_x_discrete(limits = loc.sum$leadtimeValue) + 
-      #   theme(panel.margin.x = unit(2 / (length(unique(loc.sum$locationID)) - 1), "lines")) +
-      #   theme(panel.margin.y = unit(2 / (length(unique(loc.sum$scoreType)) - 1), "lines")) +
-      #   theme(strip.text = element_text(size=14, vjust=0.5))    
+    df <- compareSkillScores()
+    if (length(df)<1){
+      return()
     }
+    # browser()
+    
+    #TODO need smart filter for lead times
+    df <- filter(df, leadtimeValue %in% c(1,2,3,4,5,6))
+    
+    #TODO replace w smart filter for _______
+    print(paste("debug, ref is:", input$rtnForecastType))
+    print(paste("debug, new is:", input$rtnSetupToCompare))
+    df$reference = NA
+    df$reference[df$forecastType==input$rtnForecastType] = "ref"
+    df$reference[df$forecastType==input$rtnSetupToCompare] = "new"
+    
+    #step 1, aggregate dataet
+    agg <- c("forecastSetup", "forecastSystem", "forecastType", "locationID", "leadtimeValue", "scoreType", "reference",
+             "datePartUnit") #GT
+    df.sum <- summarySE(data = df, "scoreValue", agg, na.rm = T)
+    
+    #step 2
+    df3 <- skillScore(df.sum)
+    
+    
+    # step 3
+    #3, run df3 thru something like this to frame up
+    #     df.plot = data.frame(LocationID = rep(unique(df.sum$locationID), each = length(unique(df.sum$leadtimeValue))), 
+    #                          leadtimeValue = rep(unique(df.sum$leadtimeValue), times = length(unique(df.sum$locationID))), 
+    #                          ScoreValue = df3[2:length(df3)])
+    
+    
+    # plotInput <- 
+    ggplot(df3,  aes(color = locationID, x = as.factor(leadtimeValue), y = scoreValue )) + 
+      geom_line(size = 1) +
+      geom_point(aes(color = locationID)) +
+      theme_bw() +
+      facet_grid(scoreType ~ locationID, scales = "free_y") +
+      geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
+      xlab(paste("Lead Times (",df.sum$datePartUnit,")", sep="")) + 
+      ylab("Skill Scores") +
+      theme_bw() 
+    
+    
+    #  ggplot(df.sum,  aes(color = locationID, x = leadtimeValue, y = scoreValue ))
+    # ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
+    #   geom_line(size = 1) +
+    #   geom_point(aes(color = locationID)) +
+    #   facet_grid(scoreType ~ locationID, scales = "free_y") + #margin = TRUE
+    #   geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
+    #   xlab(paste("Lead Times (",loc.sum$datePartUnit,")", sep="")) + 
+    #   ylab("Scores") +
+    #   theme_bw() + 
+    #   theme(panel.grid.major = element_line(colour = NA)) +
+    #   theme(axis.text = element_text(size=14, vjust=0.5)) +
+    #   theme(legend.text = element_text(size=14, vjust=0.5)) +
+    #   theme(title = element_text(size = 14)) + 
+    #   scale_x_discrete(limits = loc.sum$leadtimeValue) + 
+    #   theme(panel.margin.x = unit(2 / (length(unique(loc.sum$locationID)) - 1), "lines")) +
+    #   theme(panel.margin.y = unit(2 / (length(unique(loc.sum$scoreType)) - 1), "lines")) +
+    #   theme(strip.text = element_text(size=14, vjust=0.5))    
     
   })
-  
-  
   
   output$seriesPlot <- renderPlot({
     validate(
       need(!is.null(filtInput()), "Select one or more data elements from the Filter to begin")
     )
+    # TODO NOT SURE IF VALIDATE WAS ENOUGH ... NEW ERRORS??
     if (nrow(filtInput()) == 0 || length(filtInput()) == 0) {
       plot(1, 1, col = "white")
       text(1, 1,"Select one or more data elements from the Filter to begin")
@@ -433,10 +519,11 @@ shinyServer(function(input, output, session) {
       text(1, 1, "filtInput() was empty, try a different combo")
     } else {      # have data
       filtered.input <- filtInput() # debug rename in summarySE
+      loc.sum <- NULL # DEBUG ?
       loc.sum <- summarySE(filtered.input,
-        measurevar = "scoreValue",
-        groupvars = c("locationID", "datePartUnit", "leadtimeValue", "scoreType", "forecastType"),  # GT
-        na.rm = TRUE)
+                           measurevar = "scoreValue",
+                           groupvars = c("locationID", "datePartUnit", "leadtimeValue", "scoreType", "forecastType"),  # GT
+                           na.rm = TRUE)
       loc.sum$locationID <- as.factor(loc.sum$locationID)
       na.count <- sum(filtered.input$scoreNA) 
     } # end else
@@ -473,58 +560,58 @@ shinyServer(function(input, output, session) {
     } else {
       filtered.input <- filtSkillScores() # debug rename in summarySE
       loc.sum <- summarySE(
-          filtered.input,
-          measurevar = "scoreValue",
-          groupvars = c("locationID", "datePartUnit", 
-                        "leadtimeValue", "scoreType", "forecastType"), # GT
-          na.rm = TRUE
-        )
+        filtered.input,
+        measurevar = "scoreValue",
+        groupvars = c("locationID", "datePartUnit", 
+                      "leadtimeValue", "scoreType", "forecastType"), # GT
+        na.rm = TRUE
+      )
       loc.sum$locationID <- as.factor(loc.sum$locationID)
       na.count <- sum(filtered.input$scoreNA) # should report to user since value hidden by summarySE()
     }
-
+    
     if (nrow(filtSkillScores()) == 0) {
       plot(1, 1, col = "white")
       text(1, 1, "The database doesn't have information on this combination of variables (yet)")
     } else {
-          # loc.count <- length(loc.sum$locationID)
-        # plotInput <- 
-          ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
-            geom_line(size = 1) +
-            geom_point(aes(color = locationID)) +
-            facet_grid(scoreType ~ locationID, scales = "free_y") + #margin = TRUE
-            geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
-            xlab(paste("Lead Times (",loc.sum$datePartUnit,")", sep="")) + 
-            ylab("Scores") +
-            theme_bw() + 
-            theme(panel.grid.major = element_line(colour = NA)) +
-            theme(axis.text = element_text(size=14, vjust=0.5)) +
-            theme(legend.text = element_text(size=14, vjust=0.5)) +
-            theme(title = element_text(size = 14)) + 
-            scale_x_discrete(limits = loc.sum$leadtimeValue) + 
-            theme(panel.margin.x = unit(2 / (length(unique(loc.sum$locationID)) - 1), "lines")) +
-            theme(panel.margin.y = unit(2 / (length(unique(loc.sum$scoreType)) - 1), "lines")) +
-            theme(strip.text = element_text(size=14, vjust=0.5))    
-      }
+      # loc.count <- length(loc.sum$locationID)
+      # plotInput <- 
+      ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
+        geom_line(size = 1) +
+        geom_point(aes(color = locationID)) +
+        facet_grid(scoreType ~ locationID, scales = "free_y") + #margin = TRUE
+        geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
+        xlab(paste("Lead Times (",loc.sum$datePartUnit,")", sep="")) + 
+        ylab("Scores") +
+        theme_bw() + 
+        theme(panel.grid.major = element_line(colour = NA)) +
+        theme(axis.text = element_text(size=14, vjust=0.5)) +
+        theme(legend.text = element_text(size=14, vjust=0.5)) +
+        theme(title = element_text(size = 14)) + 
+        scale_x_discrete(limits = loc.sum$leadtimeValue) + 
+        theme(panel.margin.x = unit(2 / (length(unique(loc.sum$locationID)) - 1), "lines")) +
+        theme(panel.margin.y = unit(2 / (length(unique(loc.sum$scoreType)) - 1), "lines")) +
+        theme(strip.text = element_text(size=14, vjust=0.5))    
+    }
   }) #renderPlot
   
-# main plot
+  # main plot
   output$downloadMainPlot <- downloadHandler(
     filename = 'series.plot.png',
     content = function(file){
       device <- function(..., width=width, height=height) {
         grDevices::png(..., width = width, height = height,
                        res = 300, units = "in")
-                }
-        ggsave(file, plot = plotInput(), device = device)
-        }
-    )
+      }
+      ggsave(file, plot = plotInput(), device = device)
+    }
+  )
   
-    
-    # filename = function() { paste(input$dataset, '.png', sep='') },
-    # content = function(file) {
-    #   ggsave(file, plot = "seriesPlot", device = "png")
-    #}
+  
+  # filename = function() { paste(input$dataset, '.png', sep='') },
+  # content = function(file) {
+  #   ggsave(file, plot = "seriesPlot", device = "png")
+  #}
   # )
   
   ###########################
