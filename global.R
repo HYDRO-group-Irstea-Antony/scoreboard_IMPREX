@@ -57,22 +57,16 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
 
 # expects to see col named "ref" with values "new" or "ref"
 
-skillScore <- function(data, measurevar = "scoreValue", groupvars=NULL, na.rm=FALSE, .drop=TRUE) {
-  library(dplyr)
-  
-  length2 <- function (x, na.rm=FALSE) {
-    if (na.rm) sum(!is.na(x))
-    else length(x)
-  }
-  
-  datac <- plyr::ddply(data, groupvars, .drop=.drop,
-                       .fun = function(xx, col, ref) {
-                         # print(xx[[col]]) # debug
-                         c(N    = length2(xx[[col]], na.rm=na.rm),
-                           ss   = 1 - (xx[ref == "new", col] / xx[ref == "ref", col]),
-                           mean = mean   (xx[[col]], na.rm=na.rm)
-                         )
-                       }, measurevar, data$ref
-            )
-  return(datac)
+skillScore <- function(dl) {
+  data <- as.list(split(dl[ , c("reference", "scoreValue")], f=as.factor(dl$locationID)) )
+  list.out  <- lapply(data, function(x){  
+    ss   = 1 - (x[x$reference == "new", "scoreValue"] / x[x$reference == "ref", "scoreValue"])
+  })
+  df <- as.data.frame(list.out)
+  #xformed to factors, drop the leading X
+  names(df) <- sub(pattern = "X", replacement = "", colnames(df))
+  df <- stack(df)
+  colnames(df) <- c("scoreValue", "locationID")
+  df$leadtimeValue <- rep(unique(dl$leadtimeValue), times = length(unique(dl$locationID)))
+  return(df)
 }

@@ -124,7 +124,7 @@ shinyServer(function(input, output, session) {
     Setup <- select(tbl.scores, c(caseStudy, forecastSystem, forecastSetup, forecastType))
     Setup <- filter(Setup, forecastSystem==x & caseStudy==y)
     Setup <- unique(collect(Setup, n=Inf))
-    print(paste("Setup$forecastSetup is: ", Setup$forecastSetup))
+    # print(paste("Setup$forecastSetup is: ", Setup$forecastSetup))
     Setup <- Setup[Setup$forecastSetup == Setup$forecastSetup]
     
     # Setup <- filter(tbl.forecastsetup, ID==Setup$forecastSetup)
@@ -270,19 +270,18 @@ shinyServer(function(input, output, session) {
     )) 
       return()
     
-    print("here comes sql query")
+    # print("here comes sql query")
     sqlOverlappingScoreTypes <- paste0("select distinct(\"scoreType\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnForecastSystem, 
                                        "' and \"forecastType\" = '", input$rtnForecastType , 
                                        "' and \"scoreType\" in ",
                                        "(select distinct(\"scoreType\") from \"tblScores\" where \"forecastSystem\" = '", input$rtnSystemToCompare, 
                                        "' and \"forecastType\" = '", input$rtnSetupToCompare ,"');")
-    print(paste("query: ", sqlOverlappingScoreTypes))
+    # print(paste("query: ", sqlOverlappingScoreTypes))
     rs <- dbSendQuery(db$con, sqlOverlappingScoreTypes ) 
     df <- dbFetch(rs)
     # browser()
     dbClearResult(rs)
     return(df)
-    
   })
 
     
@@ -452,9 +451,11 @@ shinyServer(function(input, output, session) {
     df <- filter(df, leadtimeValue %in% c(1,2,3,4,5,6))
     
     #TODO replace w smart filter for _______
+    print(paste("debug, ref is:", input$rtnForecastType))
+    print(paste("debug, new is:", input$rtnSetupToCompare))
     df$ref = NA
-    df$ref[df$forecastType=="Bias Correction 2"] = "ref"
-    df$ref[df$forecastType!="Bias Correction 2"] = "new"
+    df$ref[df$forecastType==input$rtnForecastType] = "ref"
+    df$ref[df$forecastType!=input$rtnSetupToCompare] = "new"
     
     #step 1, aggregate dataet
     agg <- c("forecastSetup", "forecastSystem", "forecastType", "locationID", "leadtimeValue", "scoreType", "ref")
@@ -496,22 +497,23 @@ shinyServer(function(input, output, session) {
     validate(
       need(!is.null(filtInput()), "Select one or more data elements from the Filter to begin")
     )
-    #TODO NOT SURE IF VALIDATE WAS ENOUGH ... NEW ERRORS??
-    # if (nrow(filtInput()) == 0 || length(filtInput()) == 0) {
-    #   plot(1, 1, col = "white")
-    #   text(1, 1,"Select one or more data elements from the Filter to begin")
-    # }
-    # else if (nrow(filtInput()) == 0 || length(filtInput()) == 0) {
-    #   text(1, 1, "filtInput() was empty, try a different combo")
-    # } else {      # have data
+    # TODO NOT SURE IF VALIDATE WAS ENOUGH ... NEW ERRORS??
+    if (nrow(filtInput()) == 0 || length(filtInput()) == 0) {
+      plot(1, 1, col = "white")
+      text(1, 1,"Select one or more data elements from the Filter to begin")
+    }
+    else if (nrow(filtInput()) == 0 || length(filtInput()) == 0) {
+      text(1, 1, "filtInput() was empty, try a different combo")
+    } else {      # have data
       filtered.input <- filtInput() # debug rename in summarySE
+      loc.sum <- NULL # DEBUG ?
       loc.sum <- summarySE(filtered.input,
         measurevar = "scoreValue",
         groupvars = c("locationID", "datePartUnit", "leadtimeValue", "scoreType", "forecastType"),  # GT
         na.rm = TRUE)
       loc.sum$locationID <- as.factor(loc.sum$locationID)
       na.count <- sum(filtered.input$scoreNA) 
-    # } # end else
+    } # end else
     
     if (nrow(filtInput()) == 0) {
       plot(1, 1, col = "white")
