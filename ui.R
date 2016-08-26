@@ -165,12 +165,13 @@ shinyUI(
                         column(4,
                                # p("select another Setup to compare"),
                                uiOutput("SystemToCompare"),
-                               uiOutput("ScoreTypesInBoth"),
-                               uiOutput("LocationsAll")
+                               uiOutput("ScoreTypesInBoth") #,
+                               # uiOutput("LocationsAll")
                         ),
                         column(3,
                                # uiOutput("System")
-                               uiOutput("SetupToCompare")
+                               uiOutput("SetupToCompare"),
+                               uiOutput("LocationsAll")
                         ),
                         br()
                         
