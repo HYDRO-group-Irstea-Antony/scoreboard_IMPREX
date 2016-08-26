@@ -369,11 +369,12 @@ shinyServer(function(input, output, session) {
     
     
     if (length(input$rtnLocid) == 1) {
-      remote <- filter(tbl.scores,
+
+      remote <- filter(remote,
                        locationID == input$rtnLocid)
     }
     else if (length(input$rtnLocid) > 1) {
-      remote <- filter(tbl.scores,
+      remote <- filter(remote,
                        locationID %in% input$rtnLocid)
     }
     
@@ -466,15 +467,10 @@ shinyServer(function(input, output, session) {
     #step 2
     df3 <- skillScore(df.sum)
     
-    
-    # step 3
-    #3, run df3 thru something like this to frame up
-    #     df.plot = data.frame(LocationID = rep(unique(df.sum$locationID), each = length(unique(df.sum$leadtimeValue))), 
-    #                          leadtimeValue = rep(unique(df.sum$leadtimeValue), times = length(unique(df.sum$locationID))), 
-    #                          ScoreValue = df3[2:length(df3)])
-    
-    
-    # plotInput <- 
+
+    #TODO add logic here for N>=12 (
+    #no facet, boite au moustache plots
+    # )    
     ggplot(df3,  aes(color = locationID, x = as.factor(leadtimeValue), y = scoreValue )) + 
       geom_line(size = 1) +
       geom_point(aes(color = locationID)) +
@@ -575,7 +571,7 @@ shinyServer(function(input, output, session) {
       text(1, 1, "The database doesn't have information on this combination of variables (yet)")
     } else {
       # loc.count <- length(loc.sum$locationID)
-      # plotInput <- 
+
       ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
         geom_line(size = 1) +
         geom_point(aes(color = locationID)) +
