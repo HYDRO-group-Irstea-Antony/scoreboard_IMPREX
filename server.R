@@ -459,13 +459,30 @@ shinyServer(function(input, output, session) {
     df$reference[df$forecastType==input$rtnForecastType] = "ref"
     df$reference[df$forecastType==input$rtnSetupToCompare] = "new"
     
-    #step 1, aggregate dataet
-    agg <- c("forecastSetup", "forecastSystem", "forecastType", "locationID", "leadtimeValue", "scoreType", "reference",
-             "datePartUnit") #GT
-    df.sum <- summarySE(data = df, "scoreValue", agg, na.rm = T)
+    #step 0, if comparing same ForecastTypes(aka Setups), they should be all 0s
+    if (input$rtnSetupToCompare==input$rtnForecastType){
+      agg <- c("forecastSetup", "forecastSystem", "forecastType", "locationID", "leadtimeValue", "scoreType", "reference",
+               "datePartUnit") #GT
+      df.sum <- summarySE(data = df, "scoreValue", agg, na.rm = F) 
+      # browser()
+      #step 2
+      # df3 <- skillScore(df.sum)
+      df3 <- df.sum
+      df3$scoreValue <- 0 # hard-coded to avoid NAs
+      browser()
+      
+    } else {
+      #step 1, aggregate dataet
+      agg <- c("forecastSetup", "forecastSystem", "forecastType", "locationID", "leadtimeValue", "scoreType", "reference",
+               "datePartUnit") #GT
+      df.sum <- summarySE(data = df, "scoreValue", agg, na.rm = T)
+      
+      #step 2
+      df3 <- skillScore(df.sum)
+      browser()
+      
+    }
     
-    #step 2
-    df3 <- skillScore(df.sum)
     
 
     #TODO add logic here for N>=12 (
