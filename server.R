@@ -298,7 +298,9 @@ shinyServer(function(input, output, session) {
     # }
     
     if(!is.null(get.overlapping.locs())){
-      LocationsAll <- as.vector(get.overlapping.locs())
+      LocationsAll <- as.vector(get.overlapping.locs()) #TODO sort these properly, sort(Locations$locationID)
+      LocationsAll <- sort(LocationsAll$locationID)
+      # browser()
     }
     else {
       return()
@@ -460,16 +462,15 @@ shinyServer(function(input, output, session) {
     df$reference[df$forecastType==input$rtnSetupToCompare] = "new"
     
     #step 0, if comparing same ForecastTypes(aka Setups), they should be all 0s
-    if (input$rtnSetupToCompare==input$rtnForecastType){
+    if (input$rtnSetupToCompare==input$rtnForecastType & input$rtnForecastSystem==input$rtnSystemToCompare){
       agg <- c("forecastSetup", "forecastSystem", "forecastType", "locationID", "leadtimeValue", "scoreType", "reference",
                "datePartUnit") #GT
       df.sum <- summarySE(data = df, "scoreValue", agg, na.rm = F) 
-      # browser()
       #step 2
       # df3 <- skillScore(df.sum)
       df3 <- df.sum
       df3$scoreValue <- 0 # hard-coded to avoid NAs
-      browser()
+      # browser()
       
     } else {
       #step 1, aggregate dataet
@@ -479,7 +480,7 @@ shinyServer(function(input, output, session) {
       
       #step 2
       df3 <- skillScore(df.sum)
-      browser()
+      # browser()
       
     }
     
