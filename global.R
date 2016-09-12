@@ -1,12 +1,12 @@
 # global function file in IMPREX ScoreBoard
 
-sse <- function(x, series){
-  sum((series - x)^2)
-}
-
-mse <- function(x, series){
-  mean((series - x)^2)
-}
+# sse <- function(x, series){
+#   sum((series - x)^2)
+# }
+# 
+# mse <- function(x, series){
+#   mean((series - x)^2)
+# }
 
 ## Gives count, mean, standard deviation, standard error of the mean, and confidence interval (default 95%).
 ##   data: a data frame.
@@ -67,7 +67,7 @@ skillScore <- function(dl) {
       ss   = 1 - (x[x$reference == "new", "scoreValue"] / x[x$reference == "ref", "scoreValue"])
     })
     df <- as.data.frame(list.out)
-    print(summary(df))
+    # print(summary(df))
     #xformed to factors, drop the leading X
     names(df) <- sub(pattern = "X", replacement = "", colnames(df))
     df <- stack(df)
