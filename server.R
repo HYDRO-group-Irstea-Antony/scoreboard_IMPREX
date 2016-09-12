@@ -504,7 +504,7 @@ shinyServer(function(input, output, session) {
         theme_bw() 
     } else
     {
-      # browser() 
+      # browser()
       ggplot(df3,  aes(color = locationID, x = as.factor(leadtimeValue), y = scoreValue )) + 
         geom_line(size = 1) +
         geom_point(aes(color = locationID)) +
