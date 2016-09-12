@@ -489,15 +489,32 @@ shinyServer(function(input, output, session) {
     #TODO add logic here for N>=12 (
     #no facet, boite au moustache plots
     # )    
-    ggplot(df3,  aes(color = locationID, x = as.factor(leadtimeValue), y = scoreValue )) + 
-      geom_line(size = 1) +
-      geom_point(aes(color = locationID)) +
-      theme_bw() +
-      facet_grid(scoreType ~ locationID, scales = "free_y") +
-      geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
-      xlab(paste("Lead Times (",df.sum$datePartUnit,")", sep="")) + 
-      ylab("Skill Scores") +
-      theme_bw() 
+    
+    if(length(unique(df3$locationID))>=12){
+      browser()
+      ggplot(df3,  aes(color = "blue", x = as.factor(leadtimeValue), y = scoreValue )) + 
+        geom_line(size = 2) +
+        # geom_point(aes(color = locationID)) +
+        theme_bw() +
+        geom_boxplot() +
+        # facet_grid(scoreType ~ locationID, scales = "free_y") +
+        geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
+        xlab(paste("Lead Times (",df.sum$datePartUnit,")", sep="")) + 
+        ylab(paste("Skill Scores (", length(unique(df3$locationID)), ")")) +
+        theme_bw() 
+    } else
+    {
+      # browser()
+      ggplot(df3,  aes(color = locationID, x = as.factor(leadtimeValue), y = scoreValue )) + 
+        geom_line(size = 1) +
+        geom_point(aes(color = locationID)) +
+        theme_bw() +
+        facet_grid(scoreType ~ locationID, scales = "free_y") +
+        geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
+        xlab(paste("Lead Times (",df.sum$datePartUnit,")", sep="")) + 
+        ylab("Skill Scores") +
+        theme_bw() 
+    }
     
     
     #  ggplot(df.sum,  aes(color = locationID, x = leadtimeValue, y = scoreValue ))
