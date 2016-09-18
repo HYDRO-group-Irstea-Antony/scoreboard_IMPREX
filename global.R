@@ -59,7 +59,7 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
 
 skillScore <- function(dl) {
   df_out = NULL
-  print(unique(dl$scoreType))
+  # print(unique(dl$scoreType))
   for (my_score_type in unique(dl$scoreType)){
     df = NULL
     data <- as.list(split(dl[ dl$scoreType == my_score_type, c("reference", "scoreValue")], f=as.factor(dl$locationID)) )

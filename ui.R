@@ -142,25 +142,28 @@ shinyUI(
                       value="CompareSkillScores",
                       # h2("Renders comparative plot of scores for two Systems / Setups"),
                       wellPanel(
-                        column(2,
-                               p("baseline")
+                        column(1,
+                               p(" ") # baseline
                         ),
-                        
+
                         column(4,
-                               p(strong("Reference System:")),
+                               div(strong("Reference System:"), style = "color:blue"),
                                strong(uiOutput("ReferenceSystem"))
                                # p("select another System to compare"),
                         ),
                         column(4,
-                               p(strong("Reference Forecast Setup:")),
+                               div(strong("Reference Forecast Setup:"), style = "color:blue"),
                                strong(uiOutput("ReferenceSetup"))
                         ),
-                        p("note: Baseline or \"Reference\" selections are changed in the menu on the left"),
-                        br()
+                        column(2,
+                               p("note: Baseline or \"Reference\" selections are changed in the menu on the left")
+                               # ,
+                               # br()
+                               )
                       ),
                       wellPanel(
                         column(2,
-                               p("comparison")
+                               p(" ") # comparison
                         ),
                         column(4,
                                # p("select another Setup to compare"),

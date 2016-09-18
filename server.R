@@ -207,7 +207,7 @@ shinyServer(function(input, output, session) {
     if(is.null(ctlSystem))
       return()
     System <- ctlSystem$ObjectItemName
-    selectInput("rtnSystemToCompare", "System:", choices = System, multiple = F) #selected = none?
+    selectInput("rtnSystemToCompare", "System:", choices = System, multiple = F, div(style = "color:blue")) # , tags$style(color="blue")
   })
   
   output$SetupToCompare <- renderUI({
@@ -254,14 +254,14 @@ shinyServer(function(input, output, session) {
     }
   })
   
-  # DONE query valid scoreTypes for selected params
+  # query valid scoreTypes for selected params
   # output$OverlappingScoreTypes
   get.overlapping.scoretypes <- reactive({
-    a <- input$rtnSystemToCompare
+    a <- input$rtnForecastSystem #corr bug jbn
     b <- input$rtnForecastType
     c <- input$rtnSystemToCompare
     d <- input$rtnSetupToCompare
-    
+        
     if (any(
       is.null(a),
       is.null(b),
@@ -455,8 +455,8 @@ shinyServer(function(input, output, session) {
     df <- filter(df, leadtimeValue %in% c(1,2,3,4,5,6))
     
     #TODO replace w smart filter for _______
-    print(paste("debug, ref is:", input$rtnForecastType))
-    print(paste("debug, new is:", input$rtnSetupToCompare))
+    # print(paste("debug, ref is:", input$rtnForecastType))
+    # print(paste("debug, new is:", input$rtnSetupToCompare))
     df$reference = NA
     df$reference[df$forecastType==input$rtnForecastType] = "ref"
     df$reference[df$forecastType==input$rtnSetupToCompare] = "new"
@@ -490,51 +490,48 @@ shinyServer(function(input, output, session) {
     #no facet, boite au moustache plots
     # )    
     
-    if(length(unique(df3$locationID))>=12){
-      browser()
-      ggplot(df3,  aes(color = "blue", x = as.factor(leadtimeValue), y = scoreValue )) + 
-        geom_line(size = 2) +
-        # geom_point(aes(color = locationID)) +
-        theme_bw() +
-        geom_boxplot() +
-        # facet_grid(scoreType ~ locationID, scales = "free_y") +
-        geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
-        xlab(paste("Lead Times (",df.sum$datePartUnit,")", sep="")) + 
-        ylab(paste("Skill Scores (", length(unique(df3$locationID)), ")")) +
-        theme_bw() 
-    } else
-    {
-      # browser()
-      ggplot(df3,  aes(color = locationID, x = as.factor(leadtimeValue), y = scoreValue )) + 
+  # limitation for plots before switching to boite-moustache
+    if (length(unique(df3$locationID)) < 13) {
+      
+      ggplot(df3,  aes(color = locationID, x = leadtimeValue, y = scoreValue )) + 
         geom_line(size = 1) +
         geom_point(aes(color = locationID)) +
         theme_bw() +
-        facet_grid(scoreType ~ locationID, scales = "free_y") +
+        labs(col = "") +
         geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
+        facet_grid(1 ~ scoreType, scales = "free_y") + 
         xlab(paste("Lead Times (",df.sum$datePartUnit,")", sep="")) + 
         ylab("Skill Scores") +
-        theme_bw() 
+        theme(panel.grid.major = element_line(colour = NA)) +
+        theme(axis.text = element_text(size=14, vjust=0.5)) +
+        theme(legend.text = element_text(size=14, vjust=0.5)) +
+        theme(title = element_text(size = 14)) + 
+        scale_x_discrete(limits = df3$leadtimeValue) + 
+        theme(panel.margin.x = unit(2 / (length(unique(df3$locationID)) - 1), "lines")) +
+        theme(panel.margin.y = unit(2 / (length(unique(df3$scoreType)) - 1), "lines")) +
+        theme(strip.text = element_text(size=14, vjust=0.5)) + 
+        annotate("text", size = 12, colour = "grey", x = 2, y = 0.15, label = "System > Reference") +
+        annotate("text", size = 12, colour = "grey", x = 2, y = -0.15, label = "System < Reference")
+    } else {
+      ggplot(df3,  aes(color = locationID, x = leadtimeValue, y = scoreValue )) + 
+        geom_boxplot(aes(color = locationID, group = cut_width(leadtimeValue, 1)), fill="#6699FF") +
+        geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
+        facet_grid(1 ~ scoreType, scales = "free_y") + 
+        xlab(paste("Lead Times (",df.sum$datePartUnit,")", sep="")) + 
+        ylab("Skill Scores") +
+        theme_bw() + 
+        theme(legend.position = "none") +
+        theme(panel.grid.major = element_line(colour = NA)) +
+        theme(axis.text = element_text(size=14, vjust=0.5)) +
+        theme(legend.text = element_text(size=14, vjust=0.5)) +
+        theme(title = element_text(size = 14)) + 
+        scale_x_discrete(limits = df3$leadtimeValue) + 
+        theme(panel.margin.x = unit(2 / (length(unique(df3$locationID)) - 1), "lines")) +
+        theme(panel.margin.y = unit(2 / (length(unique(df3$scoreType)) - 1), "lines")) +
+        theme(strip.text = element_text(size=14, vjust=0.5)) + 
+        annotate("text", size = 12, colour = "grey", x = 2, y = 0.15, label = "System > reference") +
+        annotate("text", size = 12, colour = "grey", x = 2, y = -0.15, label = "System < reference")
     }
-    
-    
-    #  ggplot(df.sum,  aes(color = locationID, x = leadtimeValue, y = scoreValue ))
-    # ggplot(loc.sum, aes(color = locationID, x = leadtimeValue, y = scoreValue ) ) +
-    #   geom_line(size = 1) +
-    #   geom_point(aes(color = locationID)) +
-    #   facet_grid(scoreType ~ locationID, scales = "free_y") + #margin = TRUE
-    #   geom_hline(aes(yintercept=0), colour="grey", linetype="dashed") +
-    #   xlab(paste("Lead Times (",loc.sum$datePartUnit,")", sep="")) + 
-    #   ylab("Scores") +
-    #   theme_bw() + 
-    #   theme(panel.grid.major = element_line(colour = NA)) +
-    #   theme(axis.text = element_text(size=14, vjust=0.5)) +
-    #   theme(legend.text = element_text(size=14, vjust=0.5)) +
-    #   theme(title = element_text(size = 14)) + 
-    #   scale_x_discrete(limits = loc.sum$leadtimeValue) + 
-    #   theme(panel.margin.x = unit(2 / (length(unique(loc.sum$locationID)) - 1), "lines")) +
-    #   theme(panel.margin.y = unit(2 / (length(unique(loc.sum$scoreType)) - 1), "lines")) +
-    #   theme(strip.text = element_text(size=14, vjust=0.5))    
-    
   })
   
   output$seriesPlot <- renderPlot({
