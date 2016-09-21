@@ -30,8 +30,8 @@ tbl.interface <- tbl(db, "tblInterface")
 shinyUI(
   fluidPage(
     div(style="float:right",
-        paste("Connected to ", db$info$host, " as ", db$info$user)
-        
+        paste("Connected to ", db$info$dbname, " at ", db$info$host, " as ", db$info$user)
+
         # # checkboxInput("hideme", "Hide: ", value = FALSE),
         # # conditionalPanel("hideme==='FALSE'",
         #                  observe({
